@@ -1,12 +1,15 @@
 package com.datamantra.jobs
 
 import com.datamantra.pipeline.{FeatureExtraction, BuildPipeline}
+import org.apache.spark.ml.classification.LogisticRegression
+import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.{Transformer, Estimator, Pipeline}
 import org.apache.spark.ml.clustering.{KMeansModel, KMeans}
 import org.apache.spark.ml.feature.{StringIndexer, OneHotEncoder, VectorAssembler}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.IntegerType
-import org.apache.spark.sql.{SparkSession, DataFrame}
+import org.apache.spark.sql.types.{StructField, StructType, StringType, IntegerType}
+import org.apache.spark.sql.{Row, SparkSession, DataFrame}
+import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
 
 
 /**
@@ -27,54 +30,11 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
   }
 
 
-
-  /*
-  def banlanceDataSet(df:DataFrame, labelToBalance: Int, numOfClusters: Int)(sparkSession: SparkSession) = {
-    import sparkSession.implicits._
-    val filteredDFWithMoreLables = df.filter($"is_fraud" === labelToBalance)
-    val filteredDfWithLessLabels = df.filter($"is_fraud" === 1)
-    val TransactionWithFeatures = vectorAssemblerForSampling(filteredDFWithMoreLables)
-    val kMeans = new KMeans().setK(numOfClusters).setMaxIter(30)
-    TransactionWithFeatures.show()
-    val data = df.cache()
-    val model = kMeans.fit(TransactionWithFeatures)
-    val clusterCentres = model.clusterCenters
-    //    for(i<-clusterCentres)
-    //      println(i)
-    val transactionDFAfterSampling = sparkSession.sparkContext.parallelize(clusterCentres).map(x => (x, 0)).map(x => Utils.vectorToRDD(x)).toDF()
-    vectorAssembler(filteredDfWithLessLabels).unionAll(vectorAssembler(transactionDFAfterSampling))
-
-  }
-
-
-  def isImbalance(df:DataFrame)(implicit sparkSession:SparkSession, config: Config) = {
-    import sparkSession.implicits._
-    val numOfPositiveRecords = df.filter($"is_fraud" === 0).count().toInt
-    val positiveLabel = 0
-    val numofNegetiveRecords = df.count().toInt - numOfPositiveRecords.toInt
-    val negativeLabel = 1
-    val totalPoints = numofNegetiveRecords + numOfPositiveRecords
-    var numOFClusters = 0
-    if ((numOfPositiveRecords / totalPoints) * 100 < 30){  //(true,whichLabeltoReduce,numofClusters
-      println("I am in pos")
-
-      (true, positiveLabel, numofNegetiveRecords)
-    } else if (numofNegetiveRecords / totalPoints.toInt * 100 < 30) {
-      println(" iam in Negaitev part")
-      (true, negativeLabel, numOfPositiveRecords)
-    } else
-      (false, 0, 0)
-  }
-
-*/
   def main(args: Array[String]) {
 
 
     import sparkSession.implicits._
     val readOption = Map("inferSchema" -> "true", "header" -> "true")
-    //cc_num,first,last,trans_num,trans_date,trans_time,unix_time,category,merchant,amt,merch_lat,merch_long
-
-
 
     val rawTransactionDF = sparkSession.read
       .options(readOption)
@@ -101,59 +61,51 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
 
     processedTransactionDF.cache()
 
-    val fraudDF = processedTransactionDF.filter($"is_fraud" === 1)
-    val nonFraudDF = processedTransactionDF.filter($"is_fraud" === 0)
-
-    val fraudCount = fraudDF.count()
-
     val coloumnNames = List("cc_num", "category", "merchant", "distance", "amt", "age")
 
-    var pipelineStages = BuildPipeline.createFeaturePipeline(processedTransactionDF.schema, coloumnNames)
+    var pipelineStages = BuildPipeline.createStringIndexerPipeline(processedTransactionDF.schema, coloumnNames)
+
+    val pipeline = new Pipeline().setStages(pipelineStages)
+
+    val dummyModel = pipeline.fit(processedTransactionDF)
+
+    val featureDF = dummyModel.transform(processedTransactionDF)
 
 
+    val fraudFeatureDF = featureDF
+      .filter($"is_fraud" === 1)
+      .withColumnRenamed("is_fraud", "label")
+      .select("features", "label")
 
-    val nonFraudFeatureDF  = pipelineStages.foldLeft(nonFraudDF)((df, stage) => {
+    val nonFraudFeatureDF = featureDF.filter($"is_fraud" === 0)
+    val fraudCount = fraudFeatureDF.count()
 
-      stage match {
-        case o: OneHotEncoder => o.transform(df)
-        case s: StringIndexer => s.fit(df).transform(df)
-        case v: VectorAssembler => v.transform(df)
-      }
-    })
-
-    nonFraudFeatureDF.show(false)
-
-
-    val kMeans = new KMeans().setK(fraudCount.toInt).setMaxIter(30)
-
-    val model = kMeans.fit(nonFraudFeatureDF)
-    val clusterCentres = model.clusterCenters
-
-    clusterCentres.foreach(v => println(v.size))
-
-
-
-
-
-
-
-
-
-
-
-
-    /*
-
-    val fraudDF = df.filter($"is_fraud" === 1)
-    val nonFraudDF = df.filter($"is_fraud" === 0)
-
-
+    featureDF.show(false)
 
     val kMeans = new KMeans().setK(fraudCount.toInt).setMaxIter(30)
+    val kMeansModel = kMeans.fit(nonFraudFeatureDF)
 
-    val model = kMeans.fit(nonFraudDF)
+    val featureSchema = StructType(
+      Array(
+        StructField("features", VectorType, true),
+        StructField("label", IntegerType, true)
+      ))
 
-*/
+    val rowList = kMeansModel.clusterCenters.toList.map(v => (Row(v, 0)))
+    val rowRdd = sparkSession.sparkContext.makeRDD(rowList)
+    val sampledNonFraudFeatureDF = sparkSession.createDataFrame(rowRdd, featureSchema)
+
+
+    val finalfeatureDF = fraudFeatureDF.union(sampledNonFraudFeatureDF)
+
+    val Array(training, test) = finalfeatureDF.randomSplit(Array(0.7, 0.3))
+    val logisticEstimator=new LogisticRegression().setLabelCol("label").setFeaturesCol("features")
+    val model=logisticEstimator.fit(training)
+    val transactionwithPrediction = model.transform(test)
+
+    transactionwithPrediction.show(false)
+
+
 
   }
 
