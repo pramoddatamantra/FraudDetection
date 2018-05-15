@@ -56,7 +56,7 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
 
     val coloumnNames = List("cc_num", "category", "merchant", "distance", "amt", "age")
 
-    var pipelineStages = BuildPipeline.createStringIndexerPipeline(processedTransactionDF.schema, coloumnNames)
+    var pipelineStages = BuildPipeline.createFeaturePipeline(processedTransactionDF.schema, coloumnNames)
 
     val pipeline = new Pipeline().setStages(pipelineStages)
 
