@@ -1,7 +1,7 @@
 package com.datamantra.testing
 
-import com.datamantra.jobs.SparkJob
-import com.datamantra.pipeline.{FeatureExtraction, BuildPipeline}
+import com.datamantra.spark.jobs.SparkJob
+import com.datamantra.spark.pipeline.{FeatureExtraction, BuildPipeline}
 import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.{Transformer, Estimator, Pipeline}
 import org.apache.spark.ml.clustering.{KMeansModel, KMeans}
@@ -84,6 +84,7 @@ object SamplePipeline extends SparkJob("Sample App"){
     val rowRdd = sparkSession.sparkContext.makeRDD(rowList)
     val sampledFeatureDF = sparkSession.createDataFrame(rowRdd, featureSchema)
     sampledFeatureDF.show(false)
+
 
   }
 }

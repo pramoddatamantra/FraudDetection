@@ -1,6 +1,8 @@
 package com.datamantra.spark.jobs
 
+import com.datamantra.spark.algorithms.Algorithms
 import com.datamantra.spark.pipeline.{FeatureExtraction, BuildPipeline}
+import com.datamantra.utils.Utils
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.{Transformer, Estimator, Pipeline}
@@ -17,17 +19,6 @@ import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
  */
 
 object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
-
-
-  def getDistance (lat1:Double, lon1:Double, lat2:Double, lon2:Double) = {
-    val r : Int = 6371 //Earth radius
-    val latDistance : Double = Math.toRadians(lat2 - lat1)
-    val lonDistance : Double = Math.toRadians(lon2 - lon1)
-    val a : Double = Math.sin(latDistance / 2) * Math.sin(latDistance / 2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2)
-    val c : Double = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    val distance : Double = r * c
-    distance
-  }
 
 
   def main(args: Array[String]) {
@@ -52,7 +43,7 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
       .withColumnRenamed("cc_num", "cardNo")
 
 
-    val distance_udf = udf(getDistance _)
+    val distance_udf = udf(Utils.getDistance _)
 
     val processedTransactionDF = customer_age_df.join(rawTransactionDF, customer_age_df("cardNo") === rawTransactionDF("cc_num"))
       .withColumn("distance", lit(round(distance_udf($"lat", $"long", $"merch_lat", $"merch_long"), 2)))
@@ -60,16 +51,20 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
 
     processedTransactionDF.cache()
 
+    processedTransactionDF.show(false)
+
+
     val coloumnNames = List("cc_num", "category", "merchant", "distance", "amt", "age")
 
     var pipelineStages = BuildPipeline.createStringIndexerPipeline(processedTransactionDF.schema, coloumnNames)
 
     val pipeline = new Pipeline().setStages(pipelineStages)
 
-    val dummyModel = pipeline.fit(processedTransactionDF)
+    val PreprocessingTransformerModel = pipeline.fit(processedTransactionDF)
 
-    val featureDF = dummyModel.transform(processedTransactionDF)
+    val featureDF = PreprocessingTransformerModel.transform(processedTransactionDF)
 
+    PreprocessingTransformerModel.save(conf.preprocessingModelPath)
 
     val fraudFeatureDF = featureDF
       .filter($"is_fraud" === 1)
@@ -97,14 +92,10 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
 
     val finalfeatureDF = fraudFeatureDF.union(sampledNonFraudFeatureDF)
 
-    val Array(training, test) = finalfeatureDF.randomSplit(Array(0.7, 0.3))
-    val logisticEstimator=new LogisticRegression().setLabelCol("label").setFeaturesCol("features")
-    val model=logisticEstimator.fit(training)
-    val transactionwithPrediction = model.transform(test)
 
-    transactionwithPrediction.show(false)
+    val randomForestModel = Algorithms.randomForestClassifier(finalfeatureDF)
 
-
+    randomForestModel.save(conf.modelPath)
 
   }
 
