@@ -1,4 +1,4 @@
-package com.datamantra.pipeline
+package com.datamantra.spark.pipeline
 
 import org.apache.spark.ml.PipelineStage
 import org.apache.spark.ml.classification.DecisionTreeClassifier

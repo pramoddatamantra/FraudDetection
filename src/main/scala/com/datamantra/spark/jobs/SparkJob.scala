@@ -1,4 +1,4 @@
-package com.datamantra.jobs
+package com.datamantra.spark.jobs
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession

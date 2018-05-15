@@ -1,4 +1,4 @@
-package com.datamantra.jobs
+package com.datamantra.spark.jobs
 
 import org.apache.log4j.Logger
 

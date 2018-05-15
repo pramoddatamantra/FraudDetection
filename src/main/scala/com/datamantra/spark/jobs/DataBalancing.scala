@@ -1,6 +1,6 @@
-package com.datamantra.jobs
+package com.datamantra.spark.jobs
 
-import com.datamantra.pipeline.{FeatureExtraction, BuildPipeline}
+import com.datamantra.spark.pipeline.{FeatureExtraction, BuildPipeline}
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.{Transformer, Estimator, Pipeline}
@@ -31,7 +31,6 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
 
 
   def main(args: Array[String]) {
-
 
     import sparkSession.implicits._
     val readOption = Map("inferSchema" -> "true", "header" -> "true")

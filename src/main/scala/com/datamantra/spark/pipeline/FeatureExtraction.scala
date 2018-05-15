@@ -1,4 +1,4 @@
-package com.datamantra.pipeline
+package com.datamantra.spark.pipeline
 
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.feature.{StringIndexerModel, OneHotEncoder, VectorAssembler}
