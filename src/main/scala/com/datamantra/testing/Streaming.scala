@@ -1,5 +1,6 @@
 package com.datamantra.testing
 
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions._
 import com.datamantra.cassandra.CassandraDriver
 import com.datamantra.kafka.KafkaSource
@@ -54,14 +55,59 @@ val ransactionSchema = new StructType()
 
   def readOffset(db:String, table:String) = {
 
-    sparkSession
+    val offsetDF = sparkSession
       .read
       .format("org.apache.spark.sql.cassandra")
       .option("keyspace","creditcard")
       .option("table","transaction")
+      .option("pushdown", "true")
       .load()
       .select("kafka_partition", "kafka_offset")
-      .groupBy("kafka_partition").agg(max("kafka_offset"))
+      .groupBy("kafka_partition").agg(max("kafka_offset") as "kafka_offset")
+
+    if( offsetDF.rdd.isEmpty()) {
+      ("startingOffsets", "earliest")
+    }
+    else {
+      ("startingOffsets", transformKafkaMetadataArrayToJson1(offsetDF.collect()))
+    }
+  }
+
+
+
+  /**
+   * @param array
+   * @return {"topicA":{"0":23,"1":-1},"topicB":{"0":-2}}
+   */
+  def transformKafkaMetadataArrayToJson(array: Array[Row]) : String = {
+    s"""{"creditTransaction":
+          {
+           "${array(0).getAs[Int]("kafka_partition")}": ${array(0).getAs[Long]("kafka_offset")}
+          }
+         }
+      """.replaceAll("\n", "").replaceAll(" ", "")
+  }
+
+
+  /**
+   * @param array
+   * @return {"topicA":{"0":23,"1":-1},"topicB":{"0":-2}}
+   */
+  def transformKafkaMetadataArrayToJson1(array: Array[Row]) = {
+
+    val partitionOffset = array
+      .toList
+      //.map(row => (row.getAs[Int](("kafka_partition")), row.getAs[Long](("kafka_offset"))))
+      .foldLeft("")((a, i) => {
+        a + s""""${i.getAs[Int](("kafka_partition"))}":${i.getAs[Long](("kafka_offset"))}, """
+      })
+
+    s"""{"creditTransaction":
+          {
+           ${partitionOffset.substring(0, partitionOffset.size -2)}
+          }
+         }
+      """.replaceAll("\n", "").replaceAll(" ", "")
   }
 
   def main(args: Array[String]) {
@@ -73,8 +119,8 @@ val ransactionSchema = new StructType()
 
     //sparkSession.streams.awaitAnyTermination()
 
-    val df = readOffset("creditcard", "transaction")
+    val offset = readOffset("creditcard", "transaction")
 
-    df.show(false)
+    println(offset)
   }
 }

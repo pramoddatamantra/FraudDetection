@@ -2,12 +2,9 @@ package com.datamantra.cassandra
 
 
 import com.datamantra.cassandra.foreachSink.CassandraSinkForeach
-import com.datamantra.creditcard.{FraudTransaction, TransactionKafka}
 import com.datamantra.spark.SparkHelper
 import com.datamantra.testing.Streaming._
-import com.datastax.spark.connector.CassandraRow
 import com.datastax.spark.connector.cql.CassandraConnector
-import kafka.KafkaService
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 
@@ -48,9 +45,10 @@ object CassandraDriver {
       .format("org.apache.spark.sql.cassandra")
       .option("keyspace","creditcard")
       .option("table","transaction")
+      .option("pushdown", "true")
       .load()
       .select("kafka_partition", "kafka_offset")
-      .groupBy("kafka_partition").agg(max("kafka_offset"))
+      .groupBy("kafka_partition").agg(max("kafka_offset") as "kafka_offset")
 
     if( offsetDF.rdd.isEmpty()) {
       ("startingOffsets", "earliest")
@@ -60,18 +58,25 @@ object CassandraDriver {
     }
   }
 
-
   /**
    * @param array
    * @return {"topicA":{"0":23,"1":-1},"topicB":{"0":-2}}
    */
-  def transformKafkaMetadataArrayToJson(array: Array[Row]) : String = {
+  def transformKafkaMetadataArrayToJson(array: Array[Row]) = {
+
+    val partitionOffset = array
+      .toList
+      .foldLeft("")((a, i) => {
+        a + s""""${i.getAs[Int](("kafka_partition"))}":${i.getAs[Long](("kafka_offset"))}, """
+      })
+
+    println("Offset: " + partitionOffset.substring(0, partitionOffset.size -2))
+
     s"""{"creditTransaction":
           {
-           "${array(0).getAs[Int]("partition")}": ${array(0).getAs[Long]("offset")}
+           ${partitionOffset.substring(0, partitionOffset.size -2)}
           }
          }
       """.replaceAll("\n", "").replaceAll(" ", "")
   }
-
-}
+ }

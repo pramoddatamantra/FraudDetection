@@ -37,7 +37,7 @@ object KafkaSource {
       .option("kafka.bootstrap.servers", "localhost:9092")
       .option("subscribe", "creditTransaction")
       .option("enable.auto.commit", false) // Cannot be set to true in Spark Strucutured Streaming https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html#kafka-specific-configurations
-      .option("group.id", "Structured-Streaming-Examples")
+      .option("group.id", "RealtimeFraudAnalytics")
       .option("failOnDataLoss", false) // when starting a fresh kafka (default location is temporary (/tmp) and cassandra is not (var/lib)), we have saved different offsets in Cassandra than real offsets in kafka (that contains nothing)
       .option(startingOption, partitionsAndOffsets) //this only applies when a new query is started and that resuming will always pick up from where the query left off
       .load()

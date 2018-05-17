@@ -69,7 +69,7 @@ class CassandraSinkForeach(db:String, table:String) extends ForeachWriter[Row] {
 
   def close(errorOrNull: Throwable): Unit = {
 
-    CassandraDriver.connector
+    //CassandraDriver.connector.withClusterDo(session => session.close())
     // close the connection
     //connection.keep_alive_ms	--> 5000ms :	Period of time to keep unused connections open
   }

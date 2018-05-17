@@ -4,14 +4,10 @@ package com.datamantra.spark.jobs
 import java.io.InputStream
 import java.util.Properties
 import com.datamantra.cassandra.CassandraDriver
-import com.datamantra.creditcard.KafkaColumns
 import com.datamantra.kafka.KafkaSource
-import com.datamantra.spark.jobs.DataBalancing._
-import com.datamantra.spark.pipeline.BuildPipeline
 import com.datamantra.utils.Utils
-import org.apache.spark.ml.{PipelineModel, Pipeline}
+import org.apache.spark.ml.{PipelineModel}
 import org.apache.spark.ml.classification.RandomForestClassificationModel
-import org.apache.spark.ml.feature.{VectorAssembler, OneHotEncoder, StringIndexer}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
@@ -29,7 +25,8 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
 
     import sparkSession.implicits._
 
-    val transactionStream = KafkaSource.readStream()
+    val (startingOption, partitionsAndOffsets) = CassandraDriver.readOffset("creditcard", "transaction")
+    val transactionStream = KafkaSource.readStream(startingOption, partitionsAndOffsets)
 
      val readOption = Map("inferSchema" -> "true", "header" -> "true")
      val rawCustomerDF = sparkSession.read
