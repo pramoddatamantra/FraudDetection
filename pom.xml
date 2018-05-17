@@ -40,6 +40,20 @@
       <version>${spark.version}</version>
     </dependency>
 
+    <!-- https://mvnrepository.com/artifact/org.apache.spark/spark-streaming -->
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-streaming_2.11</artifactId>
+      <version>2.2.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.apache.spark/spark-streaming -->
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-sql-kafka-0-10_2.11</artifactId>
+      <version>2.2.0</version>
+    </dependency>
+
     <!-- https://mvnrepository.com/artifact/org.apache.spark/spark-mllib -->
     <dependency>
       <groupId>org.apache.spark</groupId>
@@ -65,6 +79,27 @@
       <groupId>com.twitter</groupId>
       <artifactId>algebird-core_${scala.tools.version}</artifactId>
       <version>0.12.0</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.datastax.spark/spark-cassandra-connector -->
+    <dependency>
+      <groupId>com.datastax.spark</groupId>
+      <artifactId>spark-cassandra-connector_2.11</artifactId>
+      <version>2.0.7</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-client -->
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-client</artifactId>
+      <version>2.7.2</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.datastax.cassandra/cassandra-driver-core -->
+    <dependency>
+      <groupId>com.datastax.cassandra</groupId>
+      <artifactId>cassandra-driver-core</artifactId>
+      <version>3.3.2</version>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/log4j/log4j -->

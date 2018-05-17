@@ -1,5 +1,6 @@
 package com.datamantra.spark.jobs
 
+import com.datamantra.spark.SparkHelper._
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
@@ -23,7 +24,6 @@ abstract class SparkJob(appName:String) {
 
 
   implicit var conf:Config = Config() // use default config if not overridden
-
 
 
 }
