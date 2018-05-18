@@ -6,6 +6,8 @@ import java.util.Properties
 import com.datamantra.cassandra.CassandraDriver
 import com.datamantra.kafka.KafkaSource
 import com.datamantra.utils.Utils
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{Path, FileSystem}
 import org.apache.spark.ml.{PipelineModel}
 import org.apache.spark.ml.classification.RandomForestClassificationModel
 import org.apache.spark.sql.functions._
@@ -15,6 +17,7 @@ import org.apache.spark.sql.types._
  * Created by kafka on 14/5/18.
  */
 object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud transaction"){
+
 
   def main(args: Array[String]) {
 
@@ -57,14 +60,34 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
     val predictionDF =  randomForestModel.transform(featureTransactionDF)
 
 
-
-    //CassandraDriver.debugStream(predictionDF)
-
-
     CassandraDriver.saveForeach(predictionDF, "creditcard", "transaction")
 
+    val checkIntervalMillis = 10000
+    var isStopped = false
 
-    sparkSession.streams.awaitAnyTermination()
+    while (! isStopped) {
+      println("calling awaitTerminationOrTimeout")
+      isStopped = sparkSession.streams.awaitAnyTermination(checkIntervalMillis)
+      if (isStopped)
+        println("confirmed! The streaming context is stopped. Exiting application...")
+      else
+        println("Streaming App is still running. Timeout...")
+      checkShutdownMarker
+      if (!isStopped && stopFlag) {
+        println("stopping ssc right now")
+        sparkSession.stop
+        println("ssc is stopped!!!!!!!")
+      }
+    }
+
+
+  def checkShutdownMarker = {
+    if (!stopFlag) {
+      //val fs = FileSystem.get(new Configuration())
+      stopFlag =  new java.io.File(shutdownMarker).exists()
+    }
+
+  }
 
   }
 }

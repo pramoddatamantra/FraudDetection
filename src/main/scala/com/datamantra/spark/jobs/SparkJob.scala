@@ -13,9 +13,9 @@ abstract class SparkJob(appName:String) {
   sparkConf
     .set("spark.sql.streaming.checkpointLocation", "checkpoint")
     .set("spark.cassandra.connection.host", "localhost")
-
+    .set("spark.streaming.stopGracefullyOnShutdown", "true")
   implicit val sparkSession = SparkSession.builder.
-    master("local")
+    master("spark://datamantra:7077")
     .config(sparkConf)
     .appName("example")
     //.enableHiveSupport()
@@ -25,5 +25,8 @@ abstract class SparkJob(appName:String) {
 
   implicit var conf:Config = Config() // use default config if not overridden
 
+
+  val shutdownMarker = "/tmp/shutdownmarker"
+  var stopFlag:Boolean = false
 
 }
