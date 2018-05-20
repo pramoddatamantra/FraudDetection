@@ -6,10 +6,10 @@ import org.apache.log4j.Logger
  * Created by kafka on 9/5/18.
  */
 case class Config
-( rawTransactionDataSource:String = "file:///home/kafka/Downloads/Training/data/creditcard/transaction/output/transactions.csv",
-  rawCustomerDataSource:String = "file:///home/kafka/Downloads/Training/data/creditcard/customer/output/customer.csv",
-  modelPath:String = "file:///home/kafka/Downloads/Training/data/creditcard/RFModel",
-  preprocessingModelPath:String = "file:///home/kafka/Downloads/Training/data/creditcard/PreprocessingModel",
+( rawTransactionDataSource:String = "src/main/resources/transactions.csv",
+  rawCustomerDataSource:String = "src/main/resources/customer.csv",
+  modelPath:String = "src/main/resources/RFModel",
+  preprocessingModelPath:String = "src/main/resources/PreprocessingModel",
   date_ts: String = "some-hard-coded-default-value",
   runMode: String = "prod"
   )

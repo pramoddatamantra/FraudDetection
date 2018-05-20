@@ -15,7 +15,7 @@ abstract class SparkJob(appName:String) {
     .set("spark.cassandra.connection.host", "localhost")
     .set("spark.streaming.stopGracefullyOnShutdown", "true")
   implicit val sparkSession = SparkSession.builder.
-    master("spark://datamantra:7077")
+    master("local[*]")
     .config(sparkConf)
     .appName("example")
     //.enableHiveSupport()
