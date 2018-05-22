@@ -1,15 +1,20 @@
 package com.datamantra.kafka
 
+import com.datamantra.config.Config
 import com.datamantra.creditcard.TransactionKafka
 import org.apache.spark.sql.{SparkSession, Dataset}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
+import com.typesafe.config.ConfigFactory
+
+import scala.collection.mutable.Map
+
+
 /**
  * Created by kafka on 16/5/18.
  */
 object KafkaSource {
-
 
   val rawTransactionStructureName = "rawTransaction"
   val rawtransactionSchema = new StructType()
@@ -34,11 +39,10 @@ object KafkaSource {
     sparkSession
       .readStream
       .format("kafka")
-      .option("kafka.bootstrap.servers", "localhost:9092")
-      .option("subscribe", "creditTransaction")
-      .option("enable.auto.commit", false) // Cannot be set to true in Spark Strucutured Streaming https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html#kafka-specific-configurations
-      .option("group.id", "RealtimeFraudAnalytics")
-      .option("failOnDataLoss", false) // when starting a fresh kafka (default location is temporary (/tmp) and cassandra is not (var/lib)), we have saved different offsets in Cassandra than real offsets in kafka (that contains nothing)
+      .option("kafka.bootstrap.servers", KafkaConfig.kafkaParams("bootstrap"))
+      .option("subscribe", KafkaConfig.kafkaParams("topic"))
+      .option("enable.auto.commit", KafkaConfig.kafkaParams("enable.auto.commit").toBoolean) // Cannot be set to true in Spark Strucutured Streaming https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html#kafka-specific-configurations
+      .option("group.id", KafkaConfig.kafkaParams("group.id"))
       .option(startingOption, partitionsAndOffsets) //this only applies when a new query is started and that resuming will always pick up from where the query left off
       .load()
       .withColumn(rawTransactionStructureName, // nested structure with our json

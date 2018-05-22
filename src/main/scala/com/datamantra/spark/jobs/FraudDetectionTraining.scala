@@ -1,16 +1,15 @@
 package com.datamantra.spark.jobs
 
+import com.datamantra.config.Config
+import com.datamantra.spark.SparkConfig
 import com.datamantra.spark.algorithms.Algorithms
-import com.datamantra.spark.pipeline.{FeatureExtraction, BuildPipeline}
+import com.datamantra.spark.pipeline.BuildPipeline
 import com.datamantra.utils.Utils
-import org.apache.spark.ml.classification.LogisticRegression
-import org.apache.spark.ml.linalg.Vector
-import org.apache.spark.ml.{Transformer, Estimator, Pipeline}
-import org.apache.spark.ml.clustering.{KMeansModel, KMeans}
-import org.apache.spark.ml.feature.{StringIndexer, OneHotEncoder, VectorAssembler}
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.clustering.KMeans
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{StructField, StructType, StringType, IntegerType}
-import org.apache.spark.sql.{Row, SparkSession, DataFrame}
+import org.apache.spark.sql.types.{StructField, StructType, IntegerType}
+import org.apache.spark.sql.Row
 import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
 
 
@@ -18,23 +17,25 @@ import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
  * Created by kafka on 9/5/18.
  */
 
-object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
+object FraudDetectionTraining extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
 
 
   def main(args: Array[String]) {
+
+    Config.parseArgs(args)
 
     import sparkSession.implicits._
     val readOption = Map("inferSchema" -> "true", "header" -> "true")
 
     val rawTransactionDF = sparkSession.read
       .options(readOption)
-      .csv(conf.rawTransactionDataSource)
+      .csv(SparkConfig.transactionDatasouce)
     rawTransactionDF.printSchema()
 
 
     val rawCustomerDF = sparkSession.read
       .options(readOption)
-      .csv(conf.rawCustomerDataSource)
+      .csv(SparkConfig.customerDatasource)
     rawCustomerDF.printSchema()
 
 
@@ -56,7 +57,7 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
 
     val coloumnNames = List("cc_num", "category", "merchant", "distance", "amt", "age")
 
-    var pipelineStages = BuildPipeline.createFeaturePipeline(processedTransactionDF.schema, coloumnNames)
+    val pipelineStages = BuildPipeline.createFeaturePipeline(processedTransactionDF.schema, coloumnNames)
 
     val pipeline = new Pipeline().setStages(pipelineStages)
 
@@ -64,7 +65,7 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
 
     val featureDF = PreprocessingTransformerModel.transform(processedTransactionDF)
 
-    PreprocessingTransformerModel.save(conf.preprocessingModelPath)
+    PreprocessingTransformerModel.save(SparkConfig.preprocessingModelPath)
 
     val fraudFeatureDF = featureDF
       .filter($"is_fraud" === 1)
@@ -85,7 +86,7 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
         StructField("label", IntegerType, true)
       ))
 
-    val rowList = kMeansModel.clusterCenters.toList.map(v => (Row(v, 0)))
+    val rowList = kMeansModel.clusterCenters.toList.map(v => Row(v, 0))
     val rowRdd = sparkSession.sparkContext.makeRDD(rowList)
     val sampledNonFraudFeatureDF = sparkSession.createDataFrame(rowRdd, featureSchema)
 
@@ -95,7 +96,7 @@ object DataBalancing extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
 
     val randomForestModel = Algorithms.randomForestClassifier(finalfeatureDF)
 
-    randomForestModel.save(conf.modelPath)
+    randomForestModel.save(SparkConfig.modelPath)
 
   }
 

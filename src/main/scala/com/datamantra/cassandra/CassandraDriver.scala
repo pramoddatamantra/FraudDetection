@@ -1,7 +1,7 @@
 package com.datamantra.cassandra
 
-
 import com.datamantra.cassandra.foreachSink.CassandraSinkForeach
+import com.datamantra.config.Config
 import com.datamantra.spark.SparkHelper
 import com.datamantra.testing.Streaming._
 import com.datastax.spark.connector.cql.CassandraConnector
@@ -13,7 +13,6 @@ import org.apache.spark.sql.functions._
  * Created by kafka on 16/5/18.
  */
 object CassandraDriver {
-
 
   val connector = CassandraConnector(SparkHelper.getSparkSession().sparkContext.getConf)
 
@@ -38,13 +37,13 @@ object CassandraDriver {
   }
 
 
-  def readOffset(db:String, table:String) = {
+  def readOffset(keyspace:String, table:String) = {
 
     val offsetDF = sparkSession
       .read
       .format("org.apache.spark.sql.cassandra")
-      .option("keyspace","creditcard")
-      .option("table","transaction")
+      .option("keyspace",keyspace)
+      .option("table",table)
       .option("pushdown", "true")
       .load()
       .select("kafka_partition", "kafka_offset")

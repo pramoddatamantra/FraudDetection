@@ -1,6 +1,9 @@
 package com.datamantra.spark.jobs
 
+import com.datamantra.config.Config
+import com.datamantra.spark.SparkConfig
 import com.datamantra.spark.SparkHelper._
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
@@ -9,24 +12,11 @@ import org.apache.spark.sql.SparkSession
  */
 abstract class SparkJob(appName:String) {
 
-  val sparkConf = new SparkConf()
-  sparkConf
-    .set("spark.sql.streaming.checkpointLocation", "checkpoint")
-    .set("spark.cassandra.connection.host", "localhost")
-    .set("spark.streaming.stopGracefullyOnShutdown", "true")
-  implicit val sparkSession = SparkSession.builder.
-    master("local[*]")
-    .config(sparkConf)
-    .appName("example")
-    //.enableHiveSupport()
+  implicit val sparkSession = SparkSession.builder
+    .config(SparkConfig.sparkConf)
     .getOrCreate()
-  //.set("spark.driver.memory", "2g")
 
-
-  implicit var conf:Config = Config() // use default config if not overridden
-
-
-  val shutdownMarker = "/tmp/shutdownmarker"
   var stopFlag:Boolean = false
+
 
 }

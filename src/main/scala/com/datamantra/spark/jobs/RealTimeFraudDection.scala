@@ -1,13 +1,11 @@
 package com.datamantra.spark.jobs
 
 
-import java.io.InputStream
-import java.util.Properties
-import com.datamantra.cassandra.CassandraDriver
+import com.datamantra.cassandra.{CassandraConfig, CassandraDriver}
+import com.datamantra.config.Config
 import com.datamantra.kafka.KafkaSource
+import com.datamantra.spark.SparkConfig
 import com.datamantra.utils.Utils
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{Path, FileSystem}
 import org.apache.spark.ml.{PipelineModel}
 import org.apache.spark.ml.classification.RandomForestClassificationModel
 import org.apache.spark.sql.functions._
@@ -18,23 +16,18 @@ import org.apache.spark.sql.types._
  */
 object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud transaction"){
 
-
   def main(args: Array[String]) {
 
-
-    val input : InputStream = getClass.getResourceAsStream("/fraudDetection.properties")
-    val prop: Properties = new Properties
-    prop.load(input)
-
+    Config.parseArgs(args)
     import sparkSession.implicits._
 
-    val (startingOption, partitionsAndOffsets) = CassandraDriver.readOffset("creditcard", "transaction")
+    val (startingOption, partitionsAndOffsets) = CassandraDriver.readOffset(CassandraConfig.keyspace, CassandraConfig.table)
     val transactionStream = KafkaSource.readStream(startingOption, partitionsAndOffsets)
 
      val readOption = Map("inferSchema" -> "true", "header" -> "true")
      val rawCustomerDF = sparkSession.read
       .options(readOption)
-      .csv(conf.rawCustomerDataSource)
+      .csv(SparkConfig.customerDatasource)
      rawCustomerDF.printSchema()
 
      val customer_age_df = rawCustomerDF
@@ -53,10 +46,10 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
      val coloumnNames = List("cc_num", "category", "merchant", "distance", "amt", "age")
 
 
-    val preprocessingModel = PipelineModel.load(conf.preprocessingModelPath)
+    val preprocessingModel = PipelineModel.load(SparkConfig.preprocessingModelPath)
     val featureTransactionDF = preprocessingModel.transform(processedTransactionDF)
 
-    val randomForestModel = RandomForestClassificationModel.load(conf.modelPath)
+    val randomForestModel = RandomForestClassificationModel.load(SparkConfig.modelPath)
     val predictionDF =  randomForestModel.transform(featureTransactionDF)
 
 
@@ -84,7 +77,7 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
   def checkShutdownMarker = {
     if (!stopFlag) {
       //val fs = FileSystem.get(new Configuration())
-      stopFlag =  new java.io.File(shutdownMarker).exists()
+      stopFlag =  new java.io.File(SparkConfig.shutdownMarker).exists()
     }
 
   }

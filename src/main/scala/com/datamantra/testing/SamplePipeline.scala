@@ -1,14 +1,13 @@
 package com.datamantra.testing
 
+import com.datamantra.spark.SparkConfig
 import com.datamantra.spark.jobs.SparkJob
-import com.datamantra.spark.pipeline.{FeatureExtraction, BuildPipeline}
-import org.apache.spark.ml.linalg.Vector
-import org.apache.spark.ml.{Transformer, Estimator, Pipeline}
-import org.apache.spark.ml.clustering.{KMeansModel, KMeans}
-import org.apache.spark.ml.feature.{StringIndexer, OneHotEncoder, VectorAssembler}
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.clustering.KMeans
+import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{StructField, StructType, StringType, IntegerType}
-import org.apache.spark.sql.{Row, SparkSession, DataFrame}
+import org.apache.spark.sql.types.{StructField, StructType, IntegerType}
+import org.apache.spark.sql.Row
 import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
 
 /**
@@ -34,13 +33,13 @@ object SamplePipeline extends SparkJob("Sample App"){
 
     val rawTransactionDF = sparkSession.read
       .options(readOption)
-      .csv(conf.rawTransactionDataSource)
+      .csv(SparkConfig.transactionDatasouce)
     rawTransactionDF.printSchema()
 
 
     val rawCustomerDF = sparkSession.read
       .options(readOption)
-      .csv(conf.rawCustomerDataSource)
+      .csv(SparkConfig.customerDatasource)
     rawCustomerDF.printSchema()
 
 
