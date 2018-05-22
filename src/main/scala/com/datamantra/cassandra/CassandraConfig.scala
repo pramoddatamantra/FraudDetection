@@ -26,4 +26,10 @@ object CassandraConfig {
   def loadLocalConfig() = {
     cassandrHost = Config.applicationConf.getString("config.local.cassandra.host")
   }
+
+  def defaultSettng() = {
+    keyspace = "creditcard"
+    table = "transaction"
+    cassandrHost = "localhost"
+  }
 }

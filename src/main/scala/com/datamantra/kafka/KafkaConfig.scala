@@ -26,5 +26,12 @@ object KafkaConfig {
     kafkaParams.put("bootstrap", Config.applicationConf.getString("config.cluster.kafka.bootstrap.servers"))
   }
 
+  def defaultSetting() = {
+
+    kafkaParams.put("topic", "creditcardTransaction")
+    kafkaParams.put("enable.auto.commit", "false")
+    kafkaParams.put("group.id", "RealTime Creditcard FraudDetection")
+    kafkaParams.put("bootstrap", "localhost:9092")
+  }
 
 }

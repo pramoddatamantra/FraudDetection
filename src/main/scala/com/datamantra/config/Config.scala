@@ -1,9 +1,11 @@
 package com.datamantra.config
 
+import java.io.File
+
 import com.datamantra.cassandra.CassandraConfig
 import com.datamantra.kafka.KafkaConfig
 import com.datamantra.spark.SparkConfig
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.log4j.Logger
 
 /**
@@ -12,7 +14,8 @@ import org.apache.log4j.Logger
 object Config {
   val logger = Logger.getLogger(getClass.getName)
 
-  val applicationConf = ConfigFactory.load()
+  var applicationConf: Config = _
+
 
   var runMode = "local"
 
@@ -22,33 +25,44 @@ object Config {
    * @return
    */
   def parseArgs(args: Array[String]) = {
-    loadCommonConfig
-    args(0) match {
-      case "cluster" => loadClusterConfig()
-      case _ => loadLocalConfig
+
+    if(args.size == 0) {
+      defaultSettiing
+    } else {
+      applicationConf = ConfigFactory.parseFile(new File(args(0)))
+      loadCommonConfig
+      args(1) match {
+        case "cluster" => loadClusterConfig()
+        case _ => loadLocalConfig
+      }
     }
 
-    /* This is a hack to run from intellij and standalone single node cluster */
-    if(args(1) != null)
-      SparkConfig.setStandaloneMaster(args(1))
   }
 
 
   def loadCommonConfig() = {
-    SparkConfig.loadCommonConfig()
-    KafkaConfig.loadCommonConfig()
     CassandraConfig.loadCommonConfig()
+    KafkaConfig.loadCommonConfig()
+    SparkConfig.loadCommonConfig()
   }
 
   def loadLocalConfig() = {
+    CassandraConfig.loadLocalConfig()
     SparkConfig.loadLocalConfig()
     KafkaConfig.loadLocalConfig()
-    CassandraConfig.loadLocalConfig()
   }
 
   def loadClusterConfig() = {
-    SparkConfig.loadClusterConfig()
-    KafkaConfig.loadClusterConfig()
     CassandraConfig.loadClusterConfig()
+    KafkaConfig.loadClusterConfig()
+    SparkConfig.loadClusterConfig()
+  }
+
+
+  def defaultSettiing() = {
+
+    CassandraConfig.defaultSettng()
+    KafkaConfig.defaultSetting()
+    SparkConfig.defaultSetting()
   }
 }

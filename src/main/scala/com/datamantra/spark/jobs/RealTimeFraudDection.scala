@@ -16,6 +16,14 @@ import org.apache.spark.sql.types._
  */
 object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud transaction"){
 
+  def checkShutdownMarker = {
+    if (!stopFlag) {
+      //val fs = FileSystem.get(new Configuration())
+      stopFlag =  new java.io.File(SparkConfig.shutdownMarker).exists()
+    }
+
+  }
+
   def main(args: Array[String]) {
 
     Config.parseArgs(args)
@@ -36,6 +44,7 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
 
      val distance_udf = udf(Utils.getDistance _)
 
+     customer_age_df.cache()
 
      val processedTransactionDF = transactionStream.join(customer_age_df, customer_age_df("cardNo") === transactionStream("rawtransaction.cc_num"))
       .withColumn("distance", lit(round(distance_udf($"lat", $"long", $"rawtransaction.merchlat", $"rawtransaction.merchlong"), 2)))
@@ -53,7 +62,7 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
     val predictionDF =  randomForestModel.transform(featureTransactionDF)
 
 
-    CassandraDriver.saveForeach(predictionDF, "creditcard", "transaction")
+    CassandraDriver.saveForeach(predictionDF, CassandraConfig.keyspace, CassandraConfig.table)
 
     val checkIntervalMillis = 10000
     var isStopped = false
@@ -72,15 +81,6 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
         println("ssc is stopped!!!!!!!")
       }
     }
-
-
-  def checkShutdownMarker = {
-    if (!stopFlag) {
-      //val fs = FileSystem.get(new Configuration())
-      stopFlag =  new java.io.File(SparkConfig.shutdownMarker).exists()
-    }
-
-  }
 
   }
 }
