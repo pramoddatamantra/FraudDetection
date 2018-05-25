@@ -1,2 +1,5 @@
 /.idea
 /target
+/build-files
+/spark-warehouse
+FraudDetection.iml

@@ -1,6 +1,10 @@
 package com.datamantra.testing
 
-import org.apache.spark.sql.Row
+import java.net.InetAddress
+
+import com.datamantra.config.Config
+import com.datamantra.spark.SparkConfig
+import org.apache.spark.sql.{SparkSession, Row}
 import org.apache.spark.sql.functions._
 import com.datamantra.cassandra.CassandraDriver
 import com.datamantra.kafka.KafkaSource
@@ -10,6 +14,7 @@ import com.datamantra.spark.jobs.SparkJob
  * Created by kafka on 16/5/18.
  */
 object Streaming extends SparkJob("Testing streaming Job"){
+
 
   /*
 val transactionStructureName = "transaction"
@@ -55,21 +60,28 @@ val ransactionSchema = new StructType()
 
   def readOffset(db:String, table:String) = {
 
-    val offsetDF = sparkSession
-      .read
+    val sparkSession = SparkSession.builder()
+      .master("local[*]")
+      .getOrCreate()
+
+
+    import sparkSession.implicits._
+    val df = sparkSession.read
       .format("org.apache.spark.sql.cassandra")
       .option("keyspace","creditcard")
-      .option("table","transaction")
+      .option("table",table)
       .option("pushdown", "true")
       .load()
-      .select("kafka_partition", "kafka_offset")
-      .groupBy("kafka_partition").agg(max("kafka_offset") as "kafka_offset")
+      .select("partition", "offset")
+      .filter($"partition".isNotNull)
 
-    if( offsetDF.rdd.isEmpty()) {
+    if( df.rdd.isEmpty()) {
       ("startingOffsets", "earliest")
     }
     else {
-      ("startingOffsets", transformKafkaMetadataArrayToJson1(offsetDF.collect()))
+      val offsetDf = df.select("partition", "offset")
+        .groupBy("partition").agg(max("offset") as "offset")
+      ("startingOffsets", transformKafkaMetadataArrayToJson(offsetDf.collect()))
     }
   }
 
@@ -79,28 +91,15 @@ val ransactionSchema = new StructType()
    * @param array
    * @return {"topicA":{"0":23,"1":-1},"topicB":{"0":-2}}
    */
-  def transformKafkaMetadataArrayToJson(array: Array[Row]) : String = {
-    s"""{"creditTransaction":
-          {
-           "${array(0).getAs[Int]("kafka_partition")}": ${array(0).getAs[Long]("kafka_offset")}
-          }
-         }
-      """.replaceAll("\n", "").replaceAll(" ", "")
-  }
-
-
-  /**
-   * @param array
-   * @return {"topicA":{"0":23,"1":-1},"topicB":{"0":-2}}
-   */
-  def transformKafkaMetadataArrayToJson1(array: Array[Row]) = {
+  def transformKafkaMetadataArrayToJson(array: Array[Row]) = {
 
     val partitionOffset = array
       .toList
-      //.map(row => (row.getAs[Int](("kafka_partition")), row.getAs[Long](("kafka_offset"))))
       .foldLeft("")((a, i) => {
-        a + s""""${i.getAs[Int](("kafka_partition"))}":${i.getAs[Long](("kafka_offset"))}, """
+        a + s""""${i.getAs[Int](("partition"))}":${i.getAs[Long](("offset"))}, """
       })
+
+    println("Offset: " + partitionOffset.substring(0, partitionOffset.size -2))
 
     s"""{"creditTransaction":
           {
@@ -110,17 +109,21 @@ val ransactionSchema = new StructType()
       """.replaceAll("\n", "").replaceAll(" ", "")
   }
 
+
   def main(args: Array[String]) {
 
 
-    //val transactionDS = KafkaSource.readStream().select(KafkaSource.rawTransactionStructureName + ".*", "topic", "partition", "offset")
+    //Config.parseArgs(args)
+    //val transactionDS = KafkaSource.readStream().
+     // select(KafkaSource.transactionStructureName + ".*", "topic", "partition", "offset")
 
    // CassandraDriver.debugStream(transactionDS)
 
     //sparkSession.streams.awaitAnyTermination()
 
     val offset = readOffset("creditcard", "transaction")
-
     println(offset)
+
+
   }
 }

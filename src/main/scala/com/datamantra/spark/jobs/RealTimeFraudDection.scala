@@ -4,7 +4,7 @@ package com.datamantra.spark.jobs
 import com.datamantra.cassandra.{CassandraConfig, CassandraDriver}
 import com.datamantra.config.Config
 import com.datamantra.kafka.KafkaSource
-import com.datamantra.spark.SparkConfig
+import com.datamantra.spark.{DataTransformation, SparkConfig}
 import com.datamantra.utils.Utils
 import org.apache.spark.ml.{PipelineModel}
 import org.apache.spark.ml.classification.RandomForestClassificationModel
@@ -29,27 +29,25 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
     Config.parseArgs(args)
     import sparkSession.implicits._
 
-    val (startingOption, partitionsAndOffsets) = CassandraDriver.readOffset(CassandraConfig.keyspace, CassandraConfig.table)
+    val customerDF = DataTransformation.readFromCassandra(CassandraConfig.keyspace, CassandraConfig.customer)
+    val customerAgeDF = customerDF.withColumn("age", (datediff(current_date(),to_date($"dob"))/365).cast(IntegerType))
+    customerAgeDF.cache()
+
+    val (startingOption, partitionsAndOffsets) = CassandraDriver.readOffset(CassandraConfig.keyspace, CassandraConfig.transaction)
+
     val transactionStream = KafkaSource.readStream(startingOption, partitionsAndOffsets)
 
-     val readOption = Map("inferSchema" -> "true", "header" -> "true")
-     val rawCustomerDF = sparkSession.read
-      .options(readOption)
-      .csv(SparkConfig.customerDatasource)
-     rawCustomerDF.printSchema()
 
-     val customer_age_df = rawCustomerDF
-      .withColumn("age", (datediff(current_date(),to_date($"dob"))/365).cast(IntegerType))
-      .withColumnRenamed("cc_num", "cardNo")
+    //CassandraDriver.debugStream(transactionStream)
+    val distanceUdf = udf(Utils.getDistance _)
 
-     val distance_udf = udf(Utils.getDistance _)
-
-     customer_age_df.cache()
-
-     val processedTransactionDF = transactionStream.join(customer_age_df, customer_age_df("cardNo") === transactionStream("rawtransaction.cc_num"))
-      .withColumn("distance", lit(round(distance_udf($"lat", $"long", $"rawtransaction.merchlat", $"rawtransaction.merchlong"), 2)))
-      .selectExpr("rawTransaction.*", "distance", "age", "topic", "partition", "offset")
+    val processedTransactionDF = transactionStream.join(customerAgeDF, customerAgeDF("cc_num") === transactionStream("transaction.cc_num"))
+      .withColumn("distance", lit(round(distanceUdf($"lat", $"long", $"transaction.merch_lat", $"transaction.merch_long"), 2)))
+      .selectExpr("transaction.*", "distance", "age", "topic", "partition", "offset")
       .withColumn("amt", lit($"amt") cast(DoubleType))
+      .drop("first")
+      .drop("last")
+
 
 
      val coloumnNames = List("cc_num", "category", "merchant", "distance", "amt", "age")
@@ -59,10 +57,11 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
     val featureTransactionDF = preprocessingModel.transform(processedTransactionDF)
 
     val randomForestModel = RandomForestClassificationModel.load(SparkConfig.modelPath)
-    val predictionDF =  randomForestModel.transform(featureTransactionDF)
+    val predictionDF =  randomForestModel.transform(featureTransactionDF).withColumnRenamed("prediction", "is_fraud")
 
 
-    CassandraDriver.saveForeach(predictionDF, CassandraConfig.keyspace, CassandraConfig.table)
+    //CassandraDriver.debugStream(predictionDF)
+    CassandraDriver.saveForeach(predictionDF, CassandraConfig.keyspace, CassandraConfig.transaction)
 
     val checkIntervalMillis = 10000
     var isStopped = false

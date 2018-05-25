@@ -18,6 +18,7 @@ object Config {
 
 
   var runMode = "local"
+  var localProjectDir = ""
 
   /**
    * Parse a config object from command line inputs
@@ -30,16 +31,30 @@ object Config {
       defaultSettiing
     } else {
       applicationConf = ConfigFactory.parseFile(new File(args(0)))
-      loadCommonConfig
+      val runMode = applicationConf.getString("config.mode")
+      if(runMode == "local"){
+        localProjectDir = s"file:///${System.getProperty("user.home")}/frauddetection/"
+      }
+      /*loadCommonConfig
       args(1) match {
         case "cluster" => loadClusterConfig()
         case _ => loadLocalConfig
       }
+      */
+      loadConfig()
     }
 
   }
 
 
+  def loadConfig() = {
+
+    CassandraConfig.load
+    KafkaConfig.load
+    SparkConfig.load
+  }
+
+  /*
   def loadCommonConfig() = {
     CassandraConfig.loadCommonConfig()
     KafkaConfig.loadCommonConfig()
@@ -57,7 +72,7 @@ object Config {
     KafkaConfig.loadClusterConfig()
     SparkConfig.loadClusterConfig()
   }
-
+*/
 
   def defaultSettiing() = {
 

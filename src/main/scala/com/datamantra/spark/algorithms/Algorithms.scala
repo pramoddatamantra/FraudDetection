@@ -24,9 +24,9 @@ object Algorithms {
   /* def logisticRegressionClassifier(df: org.apache.spark.sql.DataFrame, spark: org.apache.spark.sql.SparkSession) = {
     import spark.implicits._
     df.cache()
-    val Array(training, test) = df.randomSplit(Array(0.7, 0.3))
+    val Array(spark.training, test) = df.randomSplit(Array(0.7, 0.3))
     val logisticEstimator = new LogisticRegression().setLabelCol("label").setFeaturesCol("features")
-    val model = logisticEstimator.fit(training)
+    val model = logisticEstimator.fit(spark.training)
     val transactionwithPrediction = model.transform(test)
     println(s"total data count is"+transactionwithPrediction.count())
     println("count of same label "+transactionwithPrediction.filter($"prediction" === $"label").count())

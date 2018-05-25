@@ -1,10 +1,7 @@
 package com.datamantra.cassandra
 
 import com.datamantra.cassandra.foreachSink.CassandraSinkForeach
-import com.datamantra.config.Config
-import com.datamantra.spark.{SparkConfig, SparkHelper}
-import com.datamantra.spark.jobs.RealTimeFraudDection
-import com.datamantra.testing.Streaming._
+import com.datamantra.spark.SparkConfig
 import com.datastax.spark.connector.cql.CassandraConnector
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
@@ -39,8 +36,9 @@ object CassandraDriver {
   }
 
 
-  def readOffset(keyspace:String, table:String) = {
+  def readOffset(keyspace:String, table:String)(implicit sparkSession:SparkSession) = {
 
+    import sparkSession.implicits._
     val df = sparkSession
       .read
       .format("org.apache.spark.sql.cassandra")
@@ -48,13 +46,15 @@ object CassandraDriver {
       .option("table",table)
       .option("pushdown", "true")
       .load()
+      .select("partition", "offset")
+      .filter($"partition".isNotNull)
 
     if( df.rdd.isEmpty()) {
       ("startingOffsets", "earliest")
     }
     else {
-      val offsetDf = df.select("kafka_partition", "kafka_offset")
-        .groupBy("kafka_partition").agg(max("kafka_offset") as "kafka_offset")
+      val offsetDf = df.select("partition", "offset")
+        .groupBy("partition").agg(max("offset") as "offset")
       ("startingOffsets", transformKafkaMetadataArrayToJson(offsetDf.collect()))
     }
   }
@@ -68,7 +68,7 @@ object CassandraDriver {
     val partitionOffset = array
       .toList
       .foldLeft("")((a, i) => {
-        a + s""""${i.getAs[Int](("kafka_partition"))}":${i.getAs[Long](("kafka_offset"))}, """
+        a + s""""${i.getAs[Int](("partition"))}":${i.getAs[Long](("offset"))}, """
       })
 
     println("Offset: " + partitionOffset.substring(0, partitionOffset.size -2))

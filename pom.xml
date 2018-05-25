@@ -54,6 +54,13 @@
       <version>2.2.0</version>
     </dependency>
 
+    <!-- https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients -->
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <version>0.10.0.1</version>
+    </dependency>
+
     <!-- https://mvnrepository.com/artifact/org.apache.spark/spark-mllib -->
     <dependency>
       <groupId>org.apache.spark</groupId>
@@ -68,10 +75,16 @@
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/com.github.scopt/scopt_2.10 -->
-    <dependency>
+    <!--<dependency>
       <groupId>com.github.scopt</groupId>
       <artifactId>scopt_${scala.tools.version}</artifactId>
       <version>3.3.0</version>
+    </dependency> -->
+
+    <dependency>
+      <groupId>com.twitter</groupId>
+      <artifactId>jsr166e</artifactId>
+      <version>1.1.0</version>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/com.twitter/algebird-core_2.10 -->
@@ -189,7 +202,7 @@
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
-    <finalName>realtime-fruaddetection-spark</finalName>
+    <finalName>fruaddetection-spark</finalName>
     <plugins>
       <plugin>
         <groupId>org.scala-tools</groupId>
@@ -260,6 +273,9 @@
                   <include>com.github.scopt:scopt_${scala.tools.version}</include>
                   <include>com.typesafe:config</include>
                   <include>com.datastax.spark:spark-cassandra-connector_${scala.tools.version}</include>
+                  <include>org.apache.spark:spark-sql-kafka-0-10_${scala.tools.version}</include>
+                  <include>com.twitter:jsr166e</include>
+                  <include>org.apache.kafka:kafka-clients</include>
                 </includes>
               </artifactSet>
             </configuration>

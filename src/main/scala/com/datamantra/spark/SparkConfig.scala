@@ -1,5 +1,7 @@
 package com.datamantra.spark
 
+import java.net.InetAddress
+
 import com.datamantra.cassandra.CassandraConfig
 import com.datamantra.config.Config
 import com.datamantra.kafka.KafkaConfig
@@ -21,21 +23,20 @@ object SparkConfig {
    var preprocessingModelPath:String = _
    var shutdownMarker:String = _
 
+  /*
    def loadCommonConfig() = {
 
-     sparkConf.setAppName(Config.applicationConf.getString("config.common.spark.name"))
-       .set("spark.streaming.stopGracefullyOnShutdown", Config.applicationConf.getString("config.common.spark.gracefulShutdown"))
+     sparkConf.set("spark.streaming.stopGracefullyOnShutdown", Config.applicationConf.getString("config.common.spark.gracefulShutdown"))
    }
 
    def loadLocalConfig() = {
 
      shutdownMarker = Config.applicationConf.getString("config.local.spark.shutdownPath")
-     transactionDatasouce = Config.applicationConf.getString("config.local.spark.transaction.datasource")
-     customerDatasource = Config.applicationConf.getString("config.local.spark.customer.datasource")
-     modelPath = Config.applicationConf.getString("config.local.spark.model.path")
-     preprocessingModelPath = Config.applicationConf.getString("config.local.spark.model.preprocessing.path")
-     sparkConf.setMaster(Config.applicationConf.getString("config.local.spark.master"))
-       .set("spark.sql.streaming.checkpointLocation", Config.applicationConf.getString("config.local.spark.checkpoint"))
+     transactionDatasouce = Config.localProjectDir + Config.applicationConf.getString("config.local.spark.transaction.datasource")
+     customerDatasource = Config.localProjectDir + Config.applicationConf.getString("config.local.spark.customer.datasource")
+     modelPath = Config.localProjectDir + Config.applicationConf.getString("config.local.spark.model.path")
+     preprocessingModelPath = Config.localProjectDir + Config.applicationConf.getString("config.local.spark.model.preprocessing.path")
+     sparkConf.set("spark.sql.streaming.checkpointLocation", Config.applicationConf.getString("config.local.spark.checkpoint"))
        .set("spark.cassandra.connection.host", Config.applicationConf.getString("config.local.cassandra.host"))
    }
 
@@ -46,22 +47,32 @@ object SparkConfig {
      customerDatasource = Config.applicationConf.getString("spark.local.customer.datasource")
      modelPath = Config.applicationConf.getString("spark.local.model.path")
      preprocessingModelPath = Config.applicationConf.getString("spark.local.model.preprocessing.path")
-     sparkConf.setMaster(Config.applicationConf.getString("config.cluster.spark.master"))
-       .set("spark.sql.streaming.checkpointLocation", Config.applicationConf.getString("config.cluster.spark.checkpoint"))
+     sparkConf.set("spark.sql.streaming.checkpointLocation", Config.applicationConf.getString("config.cluster.spark.checkpoint"))
        .set("spark.cassandra.connection.host", Config.applicationConf.getString("config.cluster.cassandra.host"))
 
    }
+*/
 
+    def load() = {
+      println("Loading Spark Setttings")
+      sparkConf.set("spark.streaming.stopGracefullyOnShutdown", Config.applicationConf.getString("config.spark.gracefulShutdown"))
+        .set("spark.sql.streaming.checkpointLocation", Config.applicationConf.getString("config.spark.checkpoint"))
+        .set("spark.cassandra.connection.host", Config.applicationConf.getString("config.cassandra.host"))
+      shutdownMarker = Config.applicationConf.getString("config.spark.shutdownPath")
+      transactionDatasouce = Config.localProjectDir + Config.applicationConf.getString("config.spark.transaction.datasource")
+      customerDatasource = Config.localProjectDir + Config.applicationConf.getString("config.spark.customer.datasource")
+      modelPath = Config.localProjectDir + Config.applicationConf.getString("config.spark.model.path")
+      preprocessingModelPath = Config.localProjectDir + Config.applicationConf.getString("config.spark.model.preprocessing.path")
+    }
 
     def defaultSetting() = {
       sparkConf.setMaster("local[*]")
-        .setAppName("RealTime Creditcard FraudDetection")
         .set("spark.cassandra.connection.host", CassandraConfig.cassandrHost)
         .set("spark.sql.streaming.checkpointLocation", "/tmp/checkpoint")
       shutdownMarker = "/tmp/shutdownmarker"
       transactionDatasouce = "src/main/resources/data/transactions.csv"
       customerDatasource = "src/main/resources/data/customer.csv"
-      modelPath = "src/main/resources/RandomForestModel"
-      preprocessingModelPath = "src/main/resources/PreprocessingModel"
+      modelPath = "src/main/resources/spark/training/RandomForestModel"
+      preprocessingModelPath = "src/main/resources/spark/training/PreprocessingModel"
     }
  }

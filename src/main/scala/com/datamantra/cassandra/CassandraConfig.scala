@@ -8,13 +8,15 @@ import com.datamantra.config.Config
 object CassandraConfig {
 
   var keyspace:String = _
-  var table:String = _
+  var transaction:String = _
+  var customer:String = _
   var cassandrHost:String = _
 
-
+  /*
   def loadCommonConfig() = {
     keyspace = Config.applicationConf.getString("config.common.cassandra.keyspace")
-    table = Config.applicationConf.getString("config.common.cassandra.table")
+    transaction = Config.applicationConf.getString("config.common.cassandra.table.transaction")
+    customer = Config.applicationConf.getString("config.common.cassandra.table.customer")
   }
 
 
@@ -26,10 +28,21 @@ object CassandraConfig {
   def loadLocalConfig() = {
     cassandrHost = Config.applicationConf.getString("config.local.cassandra.host")
   }
+*/
+
+  def load() = {
+    println("Loading Cassandra Setttings")
+    keyspace = Config.applicationConf.getString("config.cassandra.keyspace")
+    transaction = Config.applicationConf.getString("config.cassandra.table.transaction")
+    customer = Config.applicationConf.getString("config.cassandra.table.customer")
+    cassandrHost = Config.applicationConf.getString("config.cassandra.host")
+
+  }
 
   def defaultSettng() = {
     keyspace = "creditcard"
-    table = "transaction"
+    transaction = "transaction"
+    customer = "customer"
     cassandrHost = "localhost"
   }
 }

@@ -6,18 +6,18 @@ import java.sql.Timestamp
  * Created by kafka on 16/5/18.
  */
 
-case class RawTransaction(cc_num:String,
+case class Transaction(cc_num:String,
                        first:String,
                        last:String,
-                       transactionId:String,
-                       transactionDate: String,
-                       transactionTime: String,
-                       unixTime: String,
+                       trans_num:String,
+                       trans_date: String,
+                       trans_time: String,
+                       unix_time: String,
                        category:String,
                        merchant:String,
                        amt:String,
-                       merchlat: String,
-                       merchlong:String)
+                       merch_lat: String,
+                       merch_long:String)
 
 case class FraudTransaction(cc_num:String,
                             first:String,
@@ -37,6 +37,6 @@ case class FraudTransaction(cc_num:String,
                             partition:Int,
                             offset: Long)
 
-case class TransactionKafka(topic: String, partition: Int, offset: Long, timestamp: Timestamp, timestampType:Int, rawtransaction:RawTransaction)
+case class TransactionKafka(topic: String, partition: Int, offset: Long, timestamp: Timestamp, timestampType:Int, transaction:Transaction)
 
 

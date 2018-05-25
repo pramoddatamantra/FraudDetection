@@ -11,7 +11,7 @@ object KafkaConfig {
 
   val kafkaParams: Map[String, String] = Map.empty
 
-
+/*
   def loadCommonConfig() = {
     kafkaParams.put("topic", Config.applicationConf.getString("config.common.kafka.topic"))
     kafkaParams.put("enable.auto.commit", Config.applicationConf.getString("config.common.kafka.enable.auto.commit"))
@@ -24,6 +24,15 @@ object KafkaConfig {
   def loadClusterConfig() = {
 
     kafkaParams.put("bootstrap", Config.applicationConf.getString("config.cluster.kafka.bootstrap.servers"))
+  }
+*/
+
+  def load() = {
+    println("Loading Kafka Setttings")
+    kafkaParams.put("topic", Config.applicationConf.getString("config.kafka.topic"))
+    kafkaParams.put("enable.auto.commit", Config.applicationConf.getString("config.kafka.enable.auto.commit"))
+    kafkaParams.put("group.id", Config.applicationConf.getString("config.kafka.group.id"))
+    kafkaParams.put("bootstrap", Config.applicationConf.getString("config.kafka.bootstrap.servers"))
   }
 
   def defaultSetting() = {

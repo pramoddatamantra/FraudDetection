@@ -2,7 +2,7 @@ package com.datamantra.cassandra.foreachSink
 
 
 import com.datamantra.cassandra.CassandraDriver
-import com.datamantra.creditcard.FraudTransaction
+import com.datamantra.creditcard.Enums
 import org.apache.spark.sql.{Row, ForeachWriter}
 
 /**
@@ -13,42 +13,38 @@ import org.apache.spark.sql.{Row, ForeachWriter}
 class CassandraSinkForeach(db:String, table:String) extends ForeachWriter[Row] {
   private def cqlTransaction(record: Row): String = s"""
      insert into $db.$table (
-       cc_num,
-       first,
-       last,
-       transactionId,
-       transactionDate,
-       transactionTime,
-       unixTime,
-       category,
-       merchant,
-       amt,
-       merchlat,
-       merchlong,
-       distance,
-       age,
-       is_fraud,
-       kafka_partition,
-       kafka_offset
+       ${Enums.TransactionCassandra.cc_num},
+       ${Enums.TransactionCassandra.trans_num},
+       ${Enums.TransactionCassandra.trans_date},
+       ${Enums.TransactionCassandra.trans_time},
+       ${Enums.TransactionCassandra.unix_time},
+       ${Enums.TransactionCassandra.category},
+       ${Enums.TransactionCassandra.merchant},
+       ${Enums.TransactionCassandra.amt},
+       ${Enums.TransactionCassandra.merch_lat},
+       ${Enums.TransactionCassandra.merch_long},
+       ${Enums.TransactionCassandra.distance},
+       ${Enums.TransactionCassandra.age},
+       ${Enums.TransactionCassandra.is_fraud},
+       ${Enums.TransactionCassandra.kafka_partition},
+       ${Enums.TransactionCassandra.kafka_offset}
      )
      values(
-       '${record.getAs[String]("cc_num")  }',
-       '${record.getAs[String]("first")}',
-       '${record.getAs[String]("last")}',
-       '${record.getAs[String]("transactionId")}',
-       '${record.getAs[String]("transactionDate")}',
-       '${record.getAs[String]("transactionTime")}',
-       '${record.getAs[String]("unixTime")}',
-       '${record.getAs[String]("category")}',
-       '${record.getAs[String]("merchant")}',
-        ${record.getAs[Double]("amt")},
-        ${record.getAs[Double]("merchlat")},
-        ${record.getAs[Double]("merchlong")},
-        ${record.getAs[Double]("distance")},
-        ${record.getAs[Double]("age")},
-        ${record.getAs[Double]("prediction")},
-        ${record.getAs[Int]("partition")},
-        ${record.getAs[Long]("offset")}
+       '${record.getAs[String](Enums.TransactionCassandra.cc_num)  }',
+       '${record.getAs[String](Enums.TransactionCassandra.trans_num)}',
+       '${record.getAs[String](Enums.TransactionCassandra.trans_date)}',
+       '${record.getAs[String](Enums.TransactionCassandra.trans_time)}',
+       '${record.getAs[String](Enums.TransactionCassandra.unix_time)}',
+       '${record.getAs[String](Enums.TransactionCassandra.category)}',
+       '${record.getAs[String](Enums.TransactionCassandra.merchant)}',
+        ${record.getAs[Double](Enums.TransactionCassandra.amt)},
+        ${record.getAs[Double](Enums.TransactionCassandra.merch_lat)},
+        ${record.getAs[Double](Enums.TransactionCassandra.merch_long)},
+        ${record.getAs[Double](Enums.TransactionCassandra.distance)},
+        ${record.getAs[Double](Enums.TransactionCassandra.age)},
+        ${record.getAs[Double](Enums.TransactionCassandra.is_fraud)},
+        ${record.getAs[Int](Enums.TransactionCassandra.kafka_partition)},
+        ${record.getAs[Long](Enums.TransactionCassandra.kafka_offset)}
         )"""
 
   def open(partitionId: Long, version: Long): Boolean = {
