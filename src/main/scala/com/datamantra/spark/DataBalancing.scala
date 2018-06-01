@@ -1,7 +1,7 @@
 package com.datamantra.spark
 
 import com.datamantra.spark.jobs.FraudDetectionTraining._
-import org.apache.spark.ml.clustering.KMeans
+import org.apache.spark.ml.clustering.{KMeansModel, KMeans}
 import org.apache.spark.ml.linalg.SQLDataTypes._
 import org.apache.spark.sql.{SparkSession, Row, DataFrame}
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
@@ -21,14 +21,17 @@ object DataBalancing {
     val kMeans = new KMeans().setK(reductionCount).setMaxIter(30)
     val kMeansModel = kMeans.fit(df)
 
+    import sparkSession.implicits._
+    kMeansModel.clusterCenters.toList.map(v => (v, 0)).toDF("features", "label")
+    /*
     val featureSchema = StructType(
       Array(
         StructField("features", VectorType, true),
         StructField("label", IntegerType, true)
       ))
-
     val rowList = kMeansModel.clusterCenters.toList.map(v => Row(v, 0))
     val rowRdd = sparkSession.sparkContext.makeRDD(rowList)
     sparkSession.createDataFrame(rowRdd, featureSchema)
+    */
   }
 }

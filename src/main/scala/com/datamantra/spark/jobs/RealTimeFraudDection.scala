@@ -61,7 +61,8 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
 
 
     //CassandraDriver.debugStream(predictionDF)
-    CassandraDriver.saveForeach(predictionDF, CassandraConfig.keyspace, CassandraConfig.transaction)
+    val streamingQuery = CassandraDriver.saveForeach(predictionDF, CassandraConfig.keyspace, CassandraConfig.transaction)
+
 
     val checkIntervalMillis = 10000
     var isStopped = false
@@ -76,6 +77,7 @@ object RealTimeFraudDection extends SparkJob("Streaming Job to detect fraud tran
       checkShutdownMarker
       if (!isStopped && stopFlag) {
         println("stopping ssc right now")
+        streamingQuery.stop
         sparkSession.stop
         println("ssc is stopped!!!!!!!")
       }
