@@ -43,13 +43,9 @@ object DstreamFraudDetection extends SparkJob("Fraud Detection using Dstream"){
 
     /*
        Connector Object is created in driver. It is serializable.
-       The serialized is the configuration , so once the executor get it, they establish the real connection
+       So once the executor get it, they establish the real connection
     */
     val connector = CassandraConnector(sparkSession.sparkContext.getConf)
-
-    //val broadCastConnector = sparkSession.sparkContext.broadcast(connector)
-
-    //val broadcastModel = sparkSession.sparkContext.broadcast((preprocessingModel, randomForestModel))
 
     val ssc = new StreamingContext(sparkSession.sparkContext, Duration(SparkConfig.batchInterval))
 
@@ -110,8 +106,6 @@ object DstreamFraudDetection extends SparkJob("Fraud Detection using Dstream"){
           .withColumn("distance", lit(round(distanceUdf($"lat", $"long", $"merch_lat", $"merch_long"), 2)))
           .select("cc_num", "trans_num", "trans_time", "category", "merchant", "amt", "merch_lat", "merch_long", "distance", "age", "partition", "offset")
 
-        //processedTransactionDF.printSchema()
-        //processedTransactionDF.show
 
         val featureTransactionDF = preprocessingModel.transform(processedTransactionDF)
         val predictionDF = randomForestModel.transform(featureTransactionDF)
@@ -125,26 +119,36 @@ object DstreamFraudDetection extends SparkJob("Fraud Detection using Dstream"){
          Connector Object is created in driver. It is serializable.
          It is serialized and send to executor. Once the executor get it, they establish the real connection
         */
-
-
         predictionDF.foreachPartition(partitionOfRecords => {
 
+          /*
+          Writing to Fraud, NonFruad and Offset Table in single iteration
+          Cassandra prepare statement is used because it avoids pasring of the column for every instert and hence efficient
+          Offset is inserted last to achieve atleast once semantics. it is possible that it may read duplicate creditcard
+          transactions from kafka while restart.
+          Even though duplicate creditcard transaction are read from kafka, writing to Cassandra is idempotent. Becasue
+          cc_num and trans_time is the primary key. So you cannot have duplicate records with same cc_num and trans_time.
+          As a result we achive exactly once semantics.
+         */
           connector.withSessionDo(session => {
+            //Prepare Statment for all three tables
             val preparedStatementFraud = session.prepare(CreditcardTransactionRepository.cqlTransactionPrepare(CassandraConfig.keyspace, CassandraConfig.fraudTransactionTable))
             val preparedStatementNonFraud = session.prepare(CreditcardTransactionRepository.cqlTransactionPrepare(CassandraConfig.keyspace, CassandraConfig.nonFraudTransactionTable))
             val preparedStatementOffset = session.prepare(KafkaOffsetRepository.cqlOffsetPrepare(CassandraConfig.keyspace, CassandraConfig.kafkaOffsetTable))
 
             val partitionOffset:Map[Int, Long] = Map.empty
-
             partitionOfRecords.foreach(record => {
               val isFraud = record.getAs[Double]("is_fraud")
               println("isFraud: " + isFraud)
               if (isFraud == 1.0) {
+                // Bind and execute prepared statement for Fraud Table
                 session.execute(CreditcardTransactionRepository.cqlTransactionBind(preparedStatementFraud, record))
               }
               else if(isFraud == 0.0) {
+                // Bind and execute prepared statement for NonFraud Table
                 session.execute(CreditcardTransactionRepository.cqlTransactionBind(preparedStatementNonFraud, record))
               }
+              //Get max offset in the current match
               val kafkaPartition = record.getAs[Int]("partition")
               val offset = record.getAs[Long]("offset")
               partitionOffset.get(kafkaPartition) match  {
@@ -157,16 +161,8 @@ object DstreamFraudDetection extends SparkJob("Fraud Detection using Dstream"){
               }
 
             })
-
-            /*
-            val partitionOffset = partitionOfRecords.map(record => {
-              (record.getAs[Int]("partition"), record.getAs[Long]("offset"))
-            })
-              .toList
-              .groupBy(_._1)
-              .mapValues( _.map(_._2).max)
-            */
             partitionOffset.foreach(t => {
+              // Bind and execute prepared statement for Offset Table
               session.execute(KafkaOffsetRepository.cqlOffsetBind(preparedStatementOffset, t))
 
             })
