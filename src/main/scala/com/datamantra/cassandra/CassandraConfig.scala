@@ -8,7 +8,9 @@ import com.datamantra.config.Config
 object CassandraConfig {
 
   var keyspace:String = _
-  var transaction:String = _
+  var fraudTransactionTable:String = _
+  var nonFraudTransactionTable:String = _
+  var kafkaOffsetTable:String = _
   var customer:String = _
   var cassandrHost:String = _
 
@@ -33,7 +35,9 @@ object CassandraConfig {
   def load() = {
     println("Loading Cassandra Setttings")
     keyspace = Config.applicationConf.getString("config.cassandra.keyspace")
-    transaction = Config.applicationConf.getString("config.cassandra.table.transaction")
+    fraudTransactionTable = Config.applicationConf.getString("config.cassandra.table.fraud.transaction")
+    nonFraudTransactionTable = Config.applicationConf.getString("config.cassandra.table.non.fraud.transaction")
+    kafkaOffsetTable = Config.applicationConf.getString("config.cassandra.table.kafka.offset")
     customer = Config.applicationConf.getString("config.cassandra.table.customer")
     cassandrHost = Config.applicationConf.getString("config.cassandra.host")
 
@@ -41,7 +45,9 @@ object CassandraConfig {
 
   def defaultSettng() = {
     keyspace = "creditcard"
-    transaction = "transaction"
+    fraudTransactionTable = "fraud_transaction"
+    nonFraudTransactionTable = "non_fraud_transaction"
+    kafkaOffsetTable = "kafka_offset"
     customer = "customer"
     cassandrHost = "localhost"
   }

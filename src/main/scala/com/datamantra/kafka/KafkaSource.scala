@@ -17,6 +17,7 @@ import scala.collection.mutable.Map
  */
 object KafkaSource {
 
+  /* Read stream from Kafka using Structured Streaming */
   def readStream(startingOption: String = "startingOffsets", partitionsAndOffsets: String = "earliest")(implicit sparkSession:SparkSession) = {
     println("Reading from Kafka")
     println("partitionsAndOffsets: " + partitionsAndOffsets)
@@ -34,4 +35,8 @@ object KafkaSource {
        from_json($"value".cast(StringType), Schema.kafkaTransactionSchema)) //From binary to JSON object
       .as[TransactionKafka]
   }
+
+
+
+
 }

@@ -32,7 +32,8 @@ object KafkaConfig {
     kafkaParams.put("topic", Config.applicationConf.getString("config.kafka.topic"))
     kafkaParams.put("enable.auto.commit", Config.applicationConf.getString("config.kafka.enable.auto.commit"))
     kafkaParams.put("group.id", Config.applicationConf.getString("config.kafka.group.id"))
-    kafkaParams.put("bootstrap", Config.applicationConf.getString("config.kafka.bootstrap.servers"))
+    kafkaParams.put("bootstrap.servers", Config.applicationConf.getString("config.kafka.bootstrap.servers"))
+    kafkaParams.put("auto.offset.reset", Config.applicationConf.getString("config.kafka.auto.offset.reset"))
   }
 
   def defaultSetting() = {
@@ -40,7 +41,8 @@ object KafkaConfig {
     kafkaParams.put("topic", "creditcardTransaction")
     kafkaParams.put("enable.auto.commit", "false")
     kafkaParams.put("group.id", "RealTime Creditcard FraudDetection")
-    kafkaParams.put("bootstrap", "localhost:9092")
+    kafkaParams.put("bootstrap.servers", "localhost:9092")
+    kafkaParams.put("auto.offset.reset", "earliest")
   }
 
 }

@@ -15,7 +15,7 @@ import org.apache.spark.sql.types._
 /**
  * Created by kafka on 14/5/18.
  */
-object StructuredStreamingFraudDetection extends SparkJob("Streaming Job to detect fraud transaction"){
+object StructuredStreamingFraudDetection extends SparkJob("Structured Streaming Job to detect fraud transaction"){
 
   def checkShutdownMarker = {
     if (!stopFlag) {
@@ -111,8 +111,8 @@ object StructuredStreamingFraudDetection extends SparkJob("Streaming Job to dete
 
         val kafkaOffsetDF = predictionDF.select("partition", "offset").groupBy("partition").agg(max("offset") as "offset")
 
-        //val offsetQuery = CassandraDriver.saveForeach(kafkaOffsetDF, CassandraConfig.keyspace, CassandraConfig.kafkaOffsetTable, "offsetQuery", "update")
-        val offsetQuery = CassandraDriver.debugStream(kafkaOffsetDF, "update")
+        val offsetQuery = CassandraDriver.saveForeach(kafkaOffsetDF, CassandraConfig.keyspace, CassandraConfig.kafkaOffsetTable, "offsetQuery", "update")
+        //val offsetQuery = CassandraDriver.debugStream(kafkaOffsetDF, "update")
 
         handleGracefulShutdown(1000, List(offsetQuery, fraudQuery, nonFraudQuery))
 

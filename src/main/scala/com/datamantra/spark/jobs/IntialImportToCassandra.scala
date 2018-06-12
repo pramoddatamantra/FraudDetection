@@ -6,7 +6,7 @@ import com.datamantra.creditcard.Schema
 import com.datamantra.spark.{SparkConfig, DataTransformation}
 import com.datamantra.utils.Utils
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.IntegerType
+import org.apache.spark.sql.types.{TimestampType, IntegerType}
 
 /**
  * Created by kafka on 24/5/18.
@@ -20,27 +20,53 @@ object IntialImportToCassandra extends SparkJob("Initial Import to Cassandra"){
     import sparkSession.implicits._
 
     val transactionDF = DataTransformation.read(SparkConfig.transactionDatasouce, Schema.fruadCheckedTransactionSchema)
+      .withColumn("trans_date", split($"trans_date", "T").getItem(0))
+      .withColumn("trans_time", concat_ws(" ", $"trans_date", $"trans_time"))
+      .withColumn("trans_time", to_timestamp($"trans_time", "YYYY-MM-dd HH:mm:ss") cast(TimestampType))
+
+    transactionDF.show
+
 
     val customerDF = DataTransformation.read(SparkConfig.customerDatasource, Schema.customerSchema)
 
-        /* Save Customer data to cassandra */
-    DataTransformation.saveToCassandra(customerDF, CassandraConfig.keyspace, CassandraConfig.customer)
-
+    /* Save Customer data to cassandra */
+    customerDF.write
+      .format("org.apache.spark.sql.cassandra")
+      .options(Map("keyspace" -> CassandraConfig.keyspace, "table" -> CassandraConfig.customer))
+      .save()
 
     val customerAgeDF = customerDF.withColumn("age", (datediff(current_date(),to_date($"dob"))/365).cast(IntegerType))
 
 
     val distanceUdf = udf(Utils.getDistance _)
 
-    val processedDF = transactionDF.join(customerAgeDF, Seq("cc_num"))
+    val processedDF = transactionDF.join(broadcast(customerAgeDF), Seq("cc_num"))
       .withColumn("distance", lit(round(distanceUdf($"lat", $"long", $"merch_lat", $"merch_long"), 2)))
-      .select("cc_num", "trans_num", "trans_date", "trans_time", "unix_time", "category", "merchant", "amt", "merch_lat", "merch_long", "distance", "age", "is_fraud")
+      //.withColumn("trans_date", split($"trans_date", "T").getItem(0))
+      //.withColumn("trans_time", concat_ws(" ", $"trans_date", $"trans_time"))
+      //.drop("unix_time")
+      //.withColumn("unix_time", to_timestamp($"trans_time", "YYYY-MM-dd HH:mm:ss") cast(TimestampType))
+      .select("cc_num", "trans_num", "trans_time", "category", "merchant", "amt", "merch_lat", "merch_long", "distance", "age", "is_fraud")
+      //.select("cc_num", "unix_time", "age", "amt", "category", "distance", "is_fraud", "merch_lat", "merch_long", "merchant", "trans_date", "trans_num", "trans_time")
 
     processedDF.printSchema()
-    processedDF.show
+    processedDF.show(false)
+
+    processedDF.cache()
+    val fraudDF = processedDF.filter($"is_fraud" === 1)
+    val nonFraudDF = processedDF.filter($"is_fraud" === 0)
 
     /* Save transformeed Transaction data to cassandra */
-    DataTransformation.saveToCassandra(processedDF, CassandraConfig.keyspace, CassandraConfig.transaction)
+    fraudDF.write
+      .format("org.apache.spark.sql.cassandra")
+      .options(Map("keyspace" -> CassandraConfig.keyspace, "table" -> CassandraConfig.fraudTransactionTable))
+      .save()
+
+    nonFraudDF.write
+      .format("org.apache.spark.sql.cassandra")
+      .options(Map("keyspace" -> CassandraConfig.keyspace, "table" -> CassandraConfig.nonFraudTransactionTable))
+      .save()
+
 
   }
 

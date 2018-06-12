@@ -27,8 +27,13 @@ object FraudDetectionTraining extends SparkJob("Balancing Fraud & Non-Fraud Data
 
     import sparkSession.implicits._
 
-    val transactionDF = DataTransformation.readFromCassandra(CassandraConfig.keyspace, CassandraConfig.transaction)
+    val fraudTransactionDF = DataTransformation.readFromCassandra(CassandraConfig.keyspace, CassandraConfig.fraudTransactionTable)
       .select("cc_num" , "category", "merchant", "distance", "amt", "age", "is_fraud")
+
+    val nonFraudTransactionDF = DataTransformation.readFromCassandra(CassandraConfig.keyspace, CassandraConfig.nonFraudTransactionTable)
+      .select("cc_num" , "category", "merchant", "distance", "amt", "age", "is_fraud")
+
+    val transactionDF = nonFraudTransactionDF.union(fraudTransactionDF)
     transactionDF.cache()
 
     transactionDF.show(false)

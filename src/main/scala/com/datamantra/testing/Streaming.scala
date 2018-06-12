@@ -1,19 +1,30 @@
 package com.datamantra.testing
 
 import java.net.InetAddress
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
 
 import com.datamantra.config.Config
+import com.datamantra.creditcard.Schema
 import com.datamantra.spark.SparkConfig
-import org.apache.spark.sql.{SparkSession, Row}
+import org.apache.spark.sql.{DataFrame, SparkSession, Row}
 import org.apache.spark.sql.functions._
 import com.datamantra.cassandra.CassandraDriver
 import com.datamantra.kafka.KafkaSource
 import com.datamantra.spark.jobs.SparkJob
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{TimestampType, StringType}
 
 /**
  * Created by kafka on 16/5/18.
  */
-object Streaming extends SparkJob("Testing streaming Job"){
+object Streaming {//extends SparkJob("Testing streaming Job"){
+
+
+  val sparkSession = SparkSession.builder
+    .config(SparkConfig.sparkConf)
+    .master("local")
+    .getOrCreate()
 
 
   /*
@@ -113,17 +124,22 @@ val ransactionSchema = new StructType()
   def main(args: Array[String]) {
 
 
-    //Config.parseArgs(args)
-    //val transactionDS = KafkaSource.readStream().
-     // select(KafkaSource.transactionStructureName + ".*", "topic", "partition", "offset")
+    val df = sparkSession.read
+      .option("header", "true")
+      .schema(Schema.fruadCheckedTransactionSchema)
+      .csv(args(0))
 
-   // CassandraDriver.debugStream(transactionDS)
+    import sparkSession.implicits._
+    df.printSchema()
 
-    //sparkSession.streams.awaitAnyTermination()
+    df.show(false)
 
-    val offset = readOffset("creditcard", "transaction")
-    println(offset)
 
+    val df2 = df.withColumn("trans_date", split($"trans_date", "T").getItem(0))
+      .withColumn("trans_time", concat_ws(" ", $"trans_date", $"trans_time"))
+      .withColumn("unix_time", unix_timestamp($"trans_time", "YYYY-MM-dd HH:mm:ss") cast(TimestampType))
+
+    df2.show(false)
 
   }
 }

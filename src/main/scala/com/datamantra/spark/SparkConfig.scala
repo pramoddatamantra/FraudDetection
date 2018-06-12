@@ -8,6 +8,7 @@ import com.datamantra.kafka.KafkaConfig
 import com.typesafe.config.ConfigFactory
 import org.apache.log4j.Logger
 import org.apache.spark.SparkConf
+import org.apache.spark.streaming.Duration
 
 /**
   * Created by kafka on 9/5/18.
@@ -22,6 +23,7 @@ object SparkConfig {
    var modelPath:String = _
    var preprocessingModelPath:String = _
    var shutdownMarker:String = _
+   var batchInterval:Int = _
 
   /*
    def loadCommonConfig() = {
@@ -59,6 +61,7 @@ object SparkConfig {
         .set("spark.sql.streaming.checkpointLocation", Config.applicationConf.getString("config.spark.checkpoint"))
         .set("spark.cassandra.connection.host", Config.applicationConf.getString("config.cassandra.host"))
       shutdownMarker = Config.applicationConf.getString("config.spark.shutdownPath")
+      batchInterval = Config.applicationConf.getString("config.spark.batch.interval").toInt
       transactionDatasouce = Config.localProjectDir + Config.applicationConf.getString("config.spark.transaction.datasource")
       customerDatasource = Config.localProjectDir + Config.applicationConf.getString("config.spark.customer.datasource")
       modelPath = Config.localProjectDir + Config.applicationConf.getString("config.spark.model.path")
@@ -74,5 +77,7 @@ object SparkConfig {
       customerDatasource = "src/main/resources/data/customer.csv"
       modelPath = "src/main/resources/spark/training/RandomForestModel"
       preprocessingModelPath = "src/main/resources/spark/training/PreprocessingModel"
+      batchInterval = 5000
+
     }
  }
