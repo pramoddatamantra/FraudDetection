@@ -14,7 +14,4 @@ abstract class SparkJob(appName:String) {
     .config(SparkConfig.sparkConf)
     .getOrCreate()
 
-  var stopFlag:Boolean = false
-
-
 }

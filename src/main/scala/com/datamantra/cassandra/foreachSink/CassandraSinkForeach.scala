@@ -6,6 +6,7 @@ import java.util.Date
 
 import com.datamantra.cassandra.{CassandraConfig, CassandraDriver}
 import com.datamantra.creditcard.Enums
+import org.apache.log4j.Logger
 import org.apache.spark.sql.{Row, ForeachWriter}
 
 /**
@@ -14,6 +15,8 @@ import org.apache.spark.sql.{Row, ForeachWriter}
 
 
 class CassandraSinkForeach(dbName:String, tableName:String) extends ForeachWriter[Row] {
+
+  val logger = Logger.getLogger(getClass.getName)
 
   val db = dbName
   val table = tableName

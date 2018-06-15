@@ -1,6 +1,7 @@
 package com.datamantra.kafka
 
 import com.datamantra.config.Config
+import org.apache.log4j.Logger
 
 import scala.collection.mutable.Map
 
@@ -9,26 +10,13 @@ import scala.collection.mutable.Map
  */
 object KafkaConfig {
 
+  val logger = Logger.getLogger(getClass.getName)
+
   val kafkaParams: Map[String, String] = Map.empty
 
-/*
-  def loadCommonConfig() = {
-    kafkaParams.put("topic", Config.applicationConf.getString("config.common.kafka.topic"))
-    kafkaParams.put("enable.auto.commit", Config.applicationConf.getString("config.common.kafka.enable.auto.commit"))
-    kafkaParams.put("group.id", Config.applicationConf.getString("config.common.kafka.group.id"))
-  }
-  def loadLocalConfig() = {
-    kafkaParams.put("bootstrap", Config.applicationConf.getString("config.local.kafka.bootstrap.servers"))
-  }
-
-  def loadClusterConfig() = {
-
-    kafkaParams.put("bootstrap", Config.applicationConf.getString("config.cluster.kafka.bootstrap.servers"))
-  }
-*/
-
+  /*Configuration setting are loaded from application.conf when you run Spark Standalone cluster*/
   def load() = {
-    println("Loading Kafka Setttings")
+    logger.info("Loading Kafka Setttings")
     kafkaParams.put("topic", Config.applicationConf.getString("config.kafka.topic"))
     kafkaParams.put("enable.auto.commit", Config.applicationConf.getString("config.kafka.enable.auto.commit"))
     kafkaParams.put("group.id", Config.applicationConf.getString("config.kafka.group.id"))
@@ -36,6 +24,7 @@ object KafkaConfig {
     kafkaParams.put("auto.offset.reset", Config.applicationConf.getString("config.kafka.auto.offset.reset"))
   }
 
+  /* Default Settings will be used when you run the project from Intellij */
   def defaultSetting() = {
 
     kafkaParams.put("topic", "creditcardTransaction")

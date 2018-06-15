@@ -2,16 +2,12 @@ package com.datamantra.spark.jobs
 
 import com.datamantra.cassandra.CassandraConfig
 import com.datamantra.config.Config
-import com.datamantra.spark.{DataBalancing, DataTransformation, SparkConfig}
+import com.datamantra.spark.{DataReader, DataBalancing, SparkConfig}
 import com.datamantra.spark.algorithms.Algorithms
 import com.datamantra.spark.pipeline.BuildPipeline
-import com.datamantra.utils.Utils
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.clustering.KMeans
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{StructField, StructType, IntegerType}
-import org.apache.spark.sql.Row
-import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
+
+
 
 
 /**
@@ -27,16 +23,14 @@ object FraudDetectionTraining extends SparkJob("Balancing Fraud & Non-Fraud Data
 
     import sparkSession.implicits._
 
-    val fraudTransactionDF = DataTransformation.readFromCassandra(CassandraConfig.keyspace, CassandraConfig.fraudTransactionTable)
+    val fraudTransactionDF = DataReader.readFromCassandra(CassandraConfig.keyspace, CassandraConfig.fraudTransactionTable)
       .select("cc_num" , "category", "merchant", "distance", "amt", "age", "is_fraud")
 
-    val nonFraudTransactionDF = DataTransformation.readFromCassandra(CassandraConfig.keyspace, CassandraConfig.nonFraudTransactionTable)
+    val nonFraudTransactionDF = DataReader.readFromCassandra(CassandraConfig.keyspace, CassandraConfig.nonFraudTransactionTable)
       .select("cc_num" , "category", "merchant", "distance", "amt", "age", "is_fraud")
 
     val transactionDF = nonFraudTransactionDF.union(fraudTransactionDF)
     transactionDF.cache()
-
-    transactionDF.show(false)
 
 
     val coloumnNames = List("cc_num", "category", "merchant", "distance", "amt", "age")
@@ -53,12 +47,14 @@ object FraudDetectionTraining extends SparkJob("Balancing Fraud & Non-Fraud Data
       .filter($"is_fraud" === 1)
       .withColumnRenamed("is_fraud", "label")
       .select("features", "label")
+
     val nonFraudDF = featureDF.filter($"is_fraud" === 0)
     val fraudCount = fraudDF.count()
 
-    featureDF.show(false)
 
-
+    /* There will be very few fraud transaction and more normal transaction. Models created  from such
+     * imbalanced data will not have good prediction accuracy. Hence balancing the dataset. K-means is used for balancing
+     */
     val balancedNonFraudDF = DataBalancing.createBalancedDataframe(nonFraudDF, fraudCount.toInt)
     val finalfeatureDF = fraudDF.union(balancedNonFraudDF)
 

@@ -1,11 +1,14 @@
 package com.datamantra.cassandra
 
 import com.datamantra.config.Config
+import org.apache.log4j.Logger
 
 /**
  * Created by kafka on 22/5/18.
  */
 object CassandraConfig {
+
+  val logger = Logger.getLogger(getClass.getName)
 
   var keyspace:String = _
   var fraudTransactionTable:String = _
@@ -14,26 +17,9 @@ object CassandraConfig {
   var customer:String = _
   var cassandrHost:String = _
 
-  /*
-  def loadCommonConfig() = {
-    keyspace = Config.applicationConf.getString("config.common.cassandra.keyspace")
-    transaction = Config.applicationConf.getString("config.common.cassandra.table.transaction")
-    customer = Config.applicationConf.getString("config.common.cassandra.table.customer")
-  }
-
-
-  def loadClusterConfig() = {
-    cassandrHost = Config.applicationConf.getString("config.cluster.cassandra.host")
-  }
-
-
-  def loadLocalConfig() = {
-    cassandrHost = Config.applicationConf.getString("config.local.cassandra.host")
-  }
-*/
-
+  /*Configuration setting are loaded from application.conf when you run Spark Standalone cluster*/
   def load() = {
-    println("Loading Cassandra Setttings")
+    logger.info("Loading Cassandra Setttings")
     keyspace = Config.applicationConf.getString("config.cassandra.keyspace")
     fraudTransactionTable = Config.applicationConf.getString("config.cassandra.table.fraud.transaction")
     nonFraudTransactionTable = Config.applicationConf.getString("config.cassandra.table.non.fraud.transaction")
@@ -43,6 +29,7 @@ object CassandraConfig {
 
   }
 
+  /* Default Settings will be used when you run the project from Intellij */
   def defaultSettng() = {
     keyspace = "creditcard"
     fraudTransactionTable = "fraud_transaction"

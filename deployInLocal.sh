@@ -8,5 +8,4 @@ mkdir -p $HOME/frauddetection && \
 cp -r build-files/* $HOME/frauddetection && \
 echo "Deployed in Local"
 
-
 exit 0

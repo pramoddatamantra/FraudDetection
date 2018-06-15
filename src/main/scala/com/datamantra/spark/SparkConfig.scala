@@ -25,38 +25,9 @@ object SparkConfig {
    var shutdownMarker:String = _
    var batchInterval:Int = _
 
-  /*
-   def loadCommonConfig() = {
-
-     sparkConf.set("spark.streaming.stopGracefullyOnShutdown", Config.applicationConf.getString("config.common.spark.gracefulShutdown"))
-   }
-
-   def loadLocalConfig() = {
-
-     shutdownMarker = Config.applicationConf.getString("config.local.spark.shutdownPath")
-     transactionDatasouce = Config.localProjectDir + Config.applicationConf.getString("config.local.spark.transaction.datasource")
-     customerDatasource = Config.localProjectDir + Config.applicationConf.getString("config.local.spark.customer.datasource")
-     modelPath = Config.localProjectDir + Config.applicationConf.getString("config.local.spark.model.path")
-     preprocessingModelPath = Config.localProjectDir + Config.applicationConf.getString("config.local.spark.model.preprocessing.path")
-     sparkConf.set("spark.sql.streaming.checkpointLocation", Config.applicationConf.getString("config.local.spark.checkpoint"))
-       .set("spark.cassandra.connection.host", Config.applicationConf.getString("config.local.cassandra.host"))
-   }
-
-   def loadClusterConfig() = {
-
-     shutdownMarker = Config.applicationConf.getString("config.cluster.spark.streaming.shutdownPath")
-     transactionDatasouce = Config.applicationConf.getString("config.local.spark.transaction.datasource")
-     customerDatasource = Config.applicationConf.getString("spark.local.customer.datasource")
-     modelPath = Config.applicationConf.getString("spark.local.model.path")
-     preprocessingModelPath = Config.applicationConf.getString("spark.local.model.preprocessing.path")
-     sparkConf.set("spark.sql.streaming.checkpointLocation", Config.applicationConf.getString("config.cluster.spark.checkpoint"))
-       .set("spark.cassandra.connection.host", Config.applicationConf.getString("config.cluster.cassandra.host"))
-
-   }
-*/
 
     def load() = {
-      println("Loading Spark Setttings")
+      logger.info("Loading Spark Setttings")
       sparkConf.set("spark.streaming.stopGracefullyOnShutdown", Config.applicationConf.getString("config.spark.gracefulShutdown"))
         .set("spark.sql.streaming.checkpointLocation", Config.applicationConf.getString("config.spark.checkpoint"))
         .set("spark.cassandra.connection.host", Config.applicationConf.getString("config.cassandra.host"))

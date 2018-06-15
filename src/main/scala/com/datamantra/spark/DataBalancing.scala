@@ -1,6 +1,7 @@
 package com.datamantra.spark
 
 import com.datamantra.spark.jobs.FraudDetectionTraining._
+import org.apache.log4j.Logger
 import org.apache.spark.ml.clustering.{KMeansModel, KMeans}
 import org.apache.spark.ml.linalg.SQLDataTypes._
 import org.apache.spark.sql.{SparkSession, Row, DataFrame}
@@ -11,6 +12,7 @@ import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
  */
 object DataBalancing {
 
+  val logger = Logger.getLogger(getClass.getName)
   /*
   There will be more non-fruad transaction then fraund transaction. So non-fraud transactions must be balanced
   Kmeans Algorithm is used to balance non fraud transatiion.
@@ -23,15 +25,5 @@ object DataBalancing {
 
     import sparkSession.implicits._
     kMeansModel.clusterCenters.toList.map(v => (v, 0)).toDF("features", "label")
-    /*
-    val featureSchema = StructType(
-      Array(
-        StructField("features", VectorType, true),
-        StructField("label", IntegerType, true)
-      ))
-    val rowList = kMeansModel.clusterCenters.toList.map(v => Row(v, 0))
-    val rowRdd = sparkSession.sparkContext.makeRDD(rowList)
-    sparkSession.createDataFrame(rowRdd, featureSchema)
-    */
   }
 }

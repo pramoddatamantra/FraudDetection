@@ -1,5 +1,6 @@
 package com.datamantra.spark.pipeline
 
+import org.apache.log4j.Logger
 import org.apache.spark.ml.PipelineStage
 import org.apache.spark.ml.classification.DecisionTreeClassifier
 import org.apache.spark.ml.clustering.KMeans
@@ -14,6 +15,7 @@ import scala.collection.mutable
  */
 object BuildPipeline {
 
+  val logger = Logger.getLogger(getClass.getName)
 
   def createStringIndexer(columns:List[String]) = {
     columns.map(column => {

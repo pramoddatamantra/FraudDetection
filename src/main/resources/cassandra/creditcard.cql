@@ -20,8 +20,6 @@ CREATE TABLE IF NOT EXISTS fraud_transaction (
   PRIMARY KEY(cc_num, trans_time)
 )WITH CLUSTERING ORDER BY (trans_time DESC);
 
-CREATE INDEX is_fraud_index_table ON fraud_transaction(is_fraud);
-
 
 CREATE TABLE IF NOT EXISTS non_fraud_transaction (
   cc_num text,

@@ -4,6 +4,7 @@ import java.sql.Timestamp
 
 import com.datamantra.creditcard.Enums
 import com.datastax.driver.core.PreparedStatement
+import org.apache.log4j.Logger
 import org.apache.spark.sql.Row
 
 /**
@@ -11,8 +12,10 @@ import org.apache.spark.sql.Row
  */
 object KafkaOffsetRepository {
 
+  val logger = Logger.getLogger(getClass.getName)
 
-  def cqlOffsetPrepare(db:String, table:String) = s"""
+  def cqlOffsetPrepare(db:String, table:String) = {
+    s"""
      insert into $db.$table (
        ${Enums.TransactionCassandra.kafka_partition},
        ${Enums.TransactionCassandra.kafka_offset}
@@ -20,6 +23,7 @@ object KafkaOffsetRepository {
      values(
        ?, ?
         )"""
+  }
 
   def cqlOffsetBind(prepared: PreparedStatement, record:(Int, Long)) ={
     val bound = prepared.bind()

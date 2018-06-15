@@ -11,6 +11,7 @@ object Schema {
 
 
   val transactionStructureName = "transaction"
+
   val transactionSchema = new StructType()
     .add(Enums.TransactionKafka.cc_num, StringType,true)
     .add(Enums.TransactionKafka.first, StringType, true)
@@ -52,9 +53,7 @@ object Schema {
     .add(Enums.TransactionKafka.first, StringType, true)
     .add(Enums.TransactionKafka.last, StringType, true)
     .add(Enums.TransactionKafka.trans_num, StringType, true)
-    //.add(Enums.TransactionKafka.trans_date, StringType, true)
-    .add(Enums.TransactionKafka.trans_time, StringType, true)
-    //.add(Enums.TransactionKafka.unix_time, StringType, true)
+    .add(Enums.TransactionKafka.trans_time, TimestampType, true)
     .add(Enums.TransactionKafka.category, StringType, true)
     .add(Enums.TransactionKafka.merchant, StringType, true)
     .add(Enums.TransactionKafka.amt, StringType, true)

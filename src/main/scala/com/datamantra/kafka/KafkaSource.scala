@@ -3,6 +3,7 @@ package com.datamantra.kafka
 import com.datamantra.config.Config
 import com.datamantra.creditcard.{Schema, TransactionKafka}
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
+import org.apache.log4j.Logger
 import org.apache.spark.sql.{SparkSession, Dataset}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
@@ -17,10 +18,12 @@ import scala.collection.mutable.Map
  */
 object KafkaSource {
 
+  val logger = Logger.getLogger(getClass.getName)
+
   /* Read stream from Kafka using Structured Streaming */
   def readStream(startingOption: String = "startingOffsets", partitionsAndOffsets: String = "earliest")(implicit sparkSession:SparkSession) = {
-    println("Reading from Kafka")
-    println("partitionsAndOffsets: " + partitionsAndOffsets)
+    logger.info("Reading from Kafka")
+    logger.info("partitionsAndOffsets: " + partitionsAndOffsets)
     import  sparkSession.implicits._
     sparkSession
       .readStream
@@ -35,8 +38,5 @@ object KafkaSource {
        from_json($"value".cast(StringType), Schema.kafkaTransactionSchema)) //From binary to JSON object
       .as[TransactionKafka]
   }
-
-
-
 
 }

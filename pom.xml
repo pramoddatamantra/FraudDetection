@@ -284,6 +284,7 @@
                   <include>org.apache.spark:spark-sql-kafka-0-10_${scala.tools.version}</include>
                   <include>com.twitter:jsr166e</include>
                   <include>org.apache.kafka:kafka-clients</include>
+                  <include>org.apache.spark:spark-streaming-kafka-0-10_${scala.tools.version}</include>
                 </includes>
               </artifactSet>
             </configuration>

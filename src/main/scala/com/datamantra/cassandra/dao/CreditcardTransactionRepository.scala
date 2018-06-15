@@ -4,6 +4,7 @@ import java.sql.Timestamp
 
 import com.datamantra.creditcard.Enums
 import com.datastax.driver.core.PreparedStatement
+import org.apache.log4j.Logger
 import org.apache.spark.sql.Row
 
 /**
@@ -11,9 +12,10 @@ import org.apache.spark.sql.Row
  */
 object CreditcardTransactionRepository {
 
+  val logger = Logger.getLogger(getClass.getName)
 
   def cqlTransactionPrepare(db:String, table:String) = {
-    val statement = s"""
+    s"""
      insert into $db.$table (
        ${Enums.TransactionCassandra.cc_num},
        ${Enums.TransactionCassandra.trans_time},
@@ -30,9 +32,6 @@ object CreditcardTransactionRepository {
      values(
        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )"""
-
-    statement
-
   }
 
   def cqlTransactionBind(prepared: PreparedStatement, record:Row) ={

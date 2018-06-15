@@ -6,6 +6,7 @@ package com.datamantra.creditcard
 
 object  Enums {
 
+
   object TransactionKafka extends Enumeration {
 
     val cc_num = "cc_num"

@@ -5,6 +5,7 @@ import com.datamantra.spark.SparkConfig
 import com.datastax.spark.connector.SomeColumns
 import com.datastax.spark.connector.cql.CassandraConnector
 import org.apache.kafka.common.TopicPartition
+import org.apache.log4j.Logger
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -19,7 +20,8 @@ import org.apache.spark.streaming.kafka010.HasOffsetRanges
  */
 object CassandraDriver {
 
-  //val connector = CassandraConnector(SparkHelper.getSparkSession().sparkContext.getConf)
+  val logger = Logger.getLogger(getClass.getName)
+
   val connector = CassandraConnector(SparkConfig.sparkConf)
 
 
@@ -100,6 +102,7 @@ object CassandraDriver {
 
 
 
+  /* Read offsert from Cassandra for Dstream*/
   def readOffset(keySpace:String, table:String, topic:String)(implicit sparkSession:SparkSession) = {
 
     import sparkSession.implicits._
@@ -113,7 +116,7 @@ object CassandraDriver {
       .select("partition", "offset")
 
     if (df.rdd.isEmpty()) {
-      println("No offset. Read from earliest")
+      logger.info("No offset. Read from earliest")
       None
     }
     else {
@@ -127,6 +130,7 @@ object CassandraDriver {
   }
 
 
+  /* Save Offset to Cassandra for Structured Streaming */
   def saveOffset(keySpace:String, table:String, df:DataFrame)(implicit sparkSession:SparkSession) = {
 
     import sparkSession.implicits._

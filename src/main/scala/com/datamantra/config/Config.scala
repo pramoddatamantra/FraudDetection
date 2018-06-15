@@ -21,7 +21,7 @@ object Config {
   var localProjectDir = ""
 
   /**
-   * Parse a config object from command line inputs
+   * Parse a config object from application.conf file in src/main/resources
    * @param args
    * @return
    */
@@ -35,17 +35,10 @@ object Config {
       if(runMode == "local"){
         localProjectDir = s"file:///${System.getProperty("user.home")}/frauddetection/"
       }
-      /*loadCommonConfig
-      args(1) match {
-        case "cluster" => loadClusterConfig()
-        case _ => loadLocalConfig
-      }
-      */
       loadConfig()
     }
 
   }
-
 
   def loadConfig() = {
 
@@ -53,26 +46,6 @@ object Config {
     KafkaConfig.load
     SparkConfig.load
   }
-
-  /*
-  def loadCommonConfig() = {
-    CassandraConfig.loadCommonConfig()
-    KafkaConfig.loadCommonConfig()
-    SparkConfig.loadCommonConfig()
-  }
-
-  def loadLocalConfig() = {
-    CassandraConfig.loadLocalConfig()
-    SparkConfig.loadLocalConfig()
-    KafkaConfig.loadLocalConfig()
-  }
-
-  def loadClusterConfig() = {
-    CassandraConfig.loadClusterConfig()
-    KafkaConfig.loadClusterConfig()
-    SparkConfig.loadClusterConfig()
-  }
-*/
 
   def defaultSettiing() = {
 
