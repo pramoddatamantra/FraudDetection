@@ -16,7 +16,7 @@ import org.apache.spark.sql.{Row, ForeachWriter}
 
 class CassandraSinkForeach(dbName:String, tableName:String) extends ForeachWriter[Row] {
 
-  val logger = Logger.getLogger(getClass.getName)
+  //val logger = Logger.getLogger(getClass.getName)
 
   val db = dbName
   val table = tableName

@@ -29,6 +29,7 @@ object StructuredStreamingFraudDetection extends SparkJob("Structured Streaming 
     customerAgeDF.cache()
 
 
+    /*Offset is read from checkpointing, hence reading offset and saving offset to /from Cassandra is not required*/
     //val (startingOption, partitionsAndOffsets) = CassandraDriver.readOffset(CassandraConfig.keyspace, CassandraConfig.kafkaOffsetTable)
 
     val rawStream = KafkaSource.readStream()//(startingOption, partitionsAndOffsets)
@@ -56,7 +57,7 @@ object StructuredStreamingFraudDetection extends SparkJob("Structured Streaming 
 
         val randomForestModel = RandomForestClassificationModel.load(SparkConfig.modelPath)
         val predictionDF =  randomForestModel.transform(featureTransactionDF).withColumnRenamed("prediction", "is_fraud")
-        predictionDF.cache
+        //predictionDF.cache
 
         val fraudPredictionDF = predictionDF.filter($"is_fraud" === 1.0)
 
@@ -68,11 +69,11 @@ object StructuredStreamingFraudDetection extends SparkJob("Structured Streaming 
         /*Save non fraud transactions to non_fraud_transaction table*/
         val nonFraudQuery = CassandraDriver.saveForeach(nonFraudPredictionDF, CassandraConfig.keyspace, CassandraConfig.nonFraudTransactionTable, "nonFraudQuery", "append")
 
-        /* Save/Commit offset to  kafka_offset table */
-        val kafkaOffsetDF = predictionDF.select("partition", "offset").groupBy("partition").agg(max("offset") as "offset")
-        val offsetQuery = CassandraDriver.saveForeach(kafkaOffsetDF, CassandraConfig.keyspace, CassandraConfig.kafkaOffsetTable, "offsetQuery", "update")
+        /*Offset is read from checkpointing, hence reading offset and saving offset to /from Cassandra is not required*/
+        /*val kafkaOffsetDF = predictionDF.select("partition", "offset").groupBy("partition").agg(max("offset") as "offset")
+        val offsetQuery = CassandraDriver.saveForeach(kafkaOffsetDF, CassandraConfig.keyspace, CassandraConfig.kafkaOffsetTable, "offsetQuery", "update")*/
 
-        GracefulShutdown.handleGracefulShutdown(1000, List(offsetQuery, fraudQuery, nonFraudQuery))
+        GracefulShutdown.handleGracefulShutdown(1000, List(fraudQuery, nonFraudQuery))
 
   }
 }

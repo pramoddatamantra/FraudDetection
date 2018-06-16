@@ -23,16 +23,16 @@ object KafkaSource {
   /* Read stream from Kafka using Structured Streaming */
   def readStream(startingOption: String = "startingOffsets", partitionsAndOffsets: String = "earliest")(implicit sparkSession:SparkSession) = {
     logger.info("Reading from Kafka")
-    logger.info("partitionsAndOffsets: " + partitionsAndOffsets)
+    //logger.info("partitionsAndOffsets: " + partitionsAndOffsets)
     import  sparkSession.implicits._
     sparkSession
       .readStream
       .format("kafka")
-      .option("kafka.bootstrap.servers", KafkaConfig.kafkaParams("bootstrap"))
+      .option("kafka.bootstrap.servers", KafkaConfig.kafkaParams("bootstrap.servers"))
       .option("subscribe", KafkaConfig.kafkaParams("topic"))
       .option("enable.auto.commit", KafkaConfig.kafkaParams("enable.auto.commit").toBoolean) // Cannot be set to true in Spark Strucutured Streaming https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html#kafka-specific-configurations
       .option("group.id", KafkaConfig.kafkaParams("group.id"))
-      .option(startingOption, partitionsAndOffsets) //this only applies when a new query is started and that resuming will always pick up from where the query left off
+      //.option(startingOption, partitionsAndOffsets) //this only applies when a new query is started and that resuming will always pick up from where the query left off
       .load()
       .withColumn(Schema.kafkaTransactionStructureName, // nested structure with our json
        from_json($"value".cast(StringType), Schema.kafkaTransactionSchema)) //From binary to JSON object

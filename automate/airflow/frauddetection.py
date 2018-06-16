@@ -40,7 +40,7 @@ def stopStartStreamingJob():
     remove_shutdown_marker = 'rm -rf /tmp/shutdownmarker'
     os.system(remove_shutdown_marker)
 
-    start_streaming = 'spark-submit --class com.datamantra.spark.jobs.RealTimeFraudDection --name "RealTime Creditcard FraudDetection" --master spark://datamantra:7077' + ' '  + '--deploy-mode cluster' + ' ' + home + '/frauddetection/spark/fruaddetection-spark.jar' + ' ' + home + '/frauddetection/spark/application-local.conf'
+    start_streaming = 'spark-submit --class com.datamantra.spark.jobs.RealTimeFraudDetection.DstreamFraudDetection --name "RealTime Creditcard FraudDetection" --master spark://datamantra:6066' + ' '  + '--deploy-mode cluster' + ' ' + home + '/frauddetection/spark/fruaddetection-spark.jar' + ' ' + home + '/frauddetection/spark/application-local.conf'
     os.system(start_streaming)
 
 
