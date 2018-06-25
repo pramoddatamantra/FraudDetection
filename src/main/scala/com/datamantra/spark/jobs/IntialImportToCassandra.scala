@@ -29,6 +29,7 @@ object IntialImportToCassandra extends SparkJob("Initial Import to Cassandra"){
     /* Save Customer data to cassandra */
     customerDF.write
       .format("org.apache.spark.sql.cassandra")
+      .mode("append")
       .options(Map("keyspace" -> CassandraConfig.keyspace, "table" -> CassandraConfig.customer))
       .save()
 
@@ -49,12 +50,14 @@ object IntialImportToCassandra extends SparkJob("Initial Import to Cassandra"){
     /* Save fraud transaction data to fraud_transaction cassandra table*/
     fraudDF.write
       .format("org.apache.spark.sql.cassandra")
+      .mode("append")
       .options(Map("keyspace" -> CassandraConfig.keyspace, "table" -> CassandraConfig.fraudTransactionTable))
       .save()
 
     /* Save non fraud transaction data to non_fraud_transaction cassandra table*/
     nonFraudDF.write
       .format("org.apache.spark.sql.cassandra")
+      .mode("append")
       .options(Map("keyspace" -> CassandraConfig.keyspace, "table" -> CassandraConfig.nonFraudTransactionTable))
       .save()
 
