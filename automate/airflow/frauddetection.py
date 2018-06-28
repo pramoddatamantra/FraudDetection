@@ -7,12 +7,15 @@ from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 from os.path import expanduser
+import logging
 
 
 home = expanduser("~")
 
 DAG_NAME = 'fraud_detection'
 
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger()
 
 def stopStartStreamingJob():
     stop_streaming = 'touch /tmp/shutdownmarker'
@@ -25,17 +28,22 @@ def stopStartStreamingJob():
         data = json.loads(r.content)
         activeapps = data['activeapps']
         if not activeapps:
-            print("No Active apps, Streaming app is shutdown")
+            logger.info("No Active apps, Streaming app is shutdown")
             shutdown_flag = True
         else:
-            print("List is not empty")
+            logger.info("List is not empty")
+            activeFlag = False
             for app in activeapps:
-                if not app['name'] == 'RealTime Creditcard FraudDetection':
-                    print("Streaming Job is still running")
-                    continue
-                else:
-                    shutdown_flag = True
+                if app['name'] == 'RealTime Creditcard FraudDetection':
+                    logger.info("Streaming Job is still running")
+                    activeFlag = True
                     break
+            if activeFlag == False:
+                logger.info("Streaming Job not in activeapps list.")
+                shutdown_flag = True
+            else:
+                logger.info("Streaming Job is still Running")
+
 
     remove_shutdown_marker = 'rm -rf /tmp/shutdownmarker'
     os.system(remove_shutdown_marker)
