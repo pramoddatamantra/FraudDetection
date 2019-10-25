@@ -19,21 +19,14 @@ object IntialImportToCassandra extends SparkJob("Initial Import to Cassandra"){
 
     import sparkSession.implicits._
 
+    val customerDF = DataReader.read(SparkConfig.customerDatasource, Schema.customerSchema)
+    val customerAgeDF = customerDF.withColumn("age", (datediff(current_date(),to_date($"dob"))/365).cast(IntegerType))
+
+
     val transactionDF = DataReader.read(SparkConfig.transactionDatasouce, Schema.fruadCheckedTransactionSchema)
       .withColumn("trans_date", split($"trans_date", "T").getItem(0))
       .withColumn("trans_time", concat_ws(" ", $"trans_date", $"trans_time"))
       .withColumn("trans_time", to_timestamp($"trans_time", "YYYY-MM-dd HH:mm:ss") cast(TimestampType))
-
-    val customerDF = DataReader.read(SparkConfig.customerDatasource, Schema.customerSchema)
-
-    /* Save Customer data to cassandra */
-    customerDF.write
-      .format("org.apache.spark.sql.cassandra")
-      .mode("append")
-      .options(Map("keyspace" -> CassandraConfig.keyspace, "table" -> CassandraConfig.customer))
-      .save()
-
-    val customerAgeDF = customerDF.withColumn("age", (datediff(current_date(),to_date($"dob"))/365).cast(IntegerType))
 
 
     val distanceUdf = udf(Utils.getDistance _)
@@ -46,6 +39,14 @@ object IntialImportToCassandra extends SparkJob("Initial Import to Cassandra"){
 
     val fraudDF = processedDF.filter($"is_fraud" === 1)
     val nonFraudDF = processedDF.filter($"is_fraud" === 0)
+
+
+    /* Save Customer data to cassandra */
+    customerDF.write
+      .format("org.apache.spark.sql.cassandra")
+      .mode("append")
+      .options(Map("keyspace" -> CassandraConfig.keyspace, "table" -> CassandraConfig.customer))
+      .save()
 
     /* Save fraud transaction data to fraud_transaction cassandra table*/
     fraudDF.write

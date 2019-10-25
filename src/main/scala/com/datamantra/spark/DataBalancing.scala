@@ -8,8 +8,8 @@ import org.apache.spark.sql.{SparkSession, Row, DataFrame}
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 
 /**
- * Created by kafka on 25/5/18.
- */
+  * Created by kafka on 25/5/18.
+  */
 object DataBalancing {
 
   val logger = Logger.getLogger(getClass.getName)
@@ -24,6 +24,6 @@ object DataBalancing {
     val kMeansModel = kMeans.fit(df)
 
     import sparkSession.implicits._
-    kMeansModel.clusterCenters.toList.map(v => (v, 0)).toDF("features", "label")
+    kMeansModel.clusterCenters.toList.map(v => (v, 0)).toDF("features", "is_fraud")
   }
 }

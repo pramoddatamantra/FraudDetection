@@ -2,27 +2,27 @@ package com.datamantra.spark.jobs
 
 import com.datamantra.cassandra.CassandraConfig
 import com.datamantra.config.Config
-import com.datamantra.spark.{DataBalancing, DataReader, SparkConfig}
+import com.datamantra.creditcard.Schema
 import com.datamantra.spark.algorithms.Algorithms
+import com.datamantra.spark.algorithms.Algorithms.logger
+import com.datamantra.spark.jobs.FraudDetectionTraining.sparkSession
 import com.datamantra.spark.pipeline.BuildPipeline
-import org.apache.log4j.Logger
+import com.datamantra.spark.{DataBalancing, DataReader, SparkConfig}
+import com.datamantra.utils.Utils
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, MulticlassClassificationEvaluator}
+import org.apache.spark.ml.feature._
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.functions.col
-import org.apache.spark.sql.types.DoubleType
-
-
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{DoubleType, IntegerType, TimestampType}
 
 
 /**
   * Created by kafka on 9/5/18.
   */
 
-object FraudDetectionTraining extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
-
-  val logger = Logger.getLogger(getClass.getName)
-
+object FraudDetectionTrainingTest extends SparkJob("Balancing Fraud & Non-Fraud Dataset"){
 
 
   def main(args: Array[String]) {
@@ -47,14 +47,31 @@ object FraudDetectionTraining extends SparkJob("Balancing Fraud & Non-Fraud Data
     val coloumnNames = List("category", "merchant", "distance", "amt", "age")
 
 
-    val pipelineStages = BuildPipeline.createFeaturePipeline(transactionDF.schema, coloumnNames)
-    val pipeline = new Pipeline().setStages(pipelineStages)
+    /*Transform raw numberical columns to vector. Slice the vecotor and Scale the vector.  Scaling is required so that all the column values are at the same level of measurement */
+    val numericAssembler = new VectorAssembler().setInputCols(Array("distance", "amt", "age" )).setOutputCol("rawfeature")
+    val slicer = new VectorSlicer().setInputCol("rawfeature").setOutputCol("slicedfeatures").setNames(Array("distance", "amt", "age"))
+    val scaler = new StandardScaler().setInputCol("slicedfeatures").setOutputCol("scaledfeatures")
+
+
+
+    /*String Indexer for category and merchant columns*/
+    val categoryIndexer = new StringIndexer().setInputCol("category").setOutputCol("category_indexed")
+    val merchantIndexer = new StringIndexer().setInputCol("merchant").setOutputCol("merchant_indexed")
+
+
+    /*val categoryOneHotEncoder = new OneHotEncoder().setInputCol("category_indexed").setOutputCol("category_encoded")
+    val merchantOneHotEncoder = new OneHotEncoder().setInputCol("merchant_indexed").setOutputCol("merchant_encoded")*/
+
+
+    /*Transform all the required columns as feature vector*/
+    //val vectorAssember = new VectorAssembler().setInputCols(Array("scaledfeatures")).setOutputCol("features")
+    val vectorAssember = new VectorAssembler().setInputCols(Array("category_indexed", "merchant_indexed", "scaledfeatures")).setOutputCol("features")
+
+
+    //val pipeline = new Pipeline().setStages(Array(categoryIndexer, merchantIndexer, categoryOneHotEncoder, merchantOneHotEncoder, numericAssembler, slicer, scaler, vectorAssember))
+    val pipeline = new Pipeline().setStages(Array(categoryIndexer, merchantIndexer, numericAssembler, slicer, scaler, vectorAssember))
     val preprocessingTransformerModel = pipeline.fit(transactionDF)
-
-
     val featureDF = preprocessingTransformerModel.transform(transactionDF)
-
-
     featureDF.show(false)
 
 
@@ -121,10 +138,6 @@ object FraudDetectionTraining extends SparkJob("Balancing Fraud & Non-Fraud Data
     println("False Positive Rate: " + fp/(fp + tn))
 
     println("Precision: " +  tp/(tp + fp))
-
-    /* Save Preprocessing  and Random Forest Model */
-    randomForestModel.save(SparkConfig.modelPath)
-    preprocessingTransformerModel.save(SparkConfig.preprocessingModelPath)
 
   }
 

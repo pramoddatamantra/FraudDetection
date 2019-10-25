@@ -4,24 +4,24 @@ import org.apache.log4j.Logger
 import org.apache.spark.ml.PipelineStage
 import org.apache.spark.ml.classification.DecisionTreeClassifier
 import org.apache.spark.ml.clustering.KMeans
-import org.apache.spark.ml.feature.{VectorAssembler, OneHotEncoder, StringIndexer}
+import org.apache.spark.ml.feature._
 import org.apache.spark.ml.regression.DecisionTreeRegressor
 import org.apache.spark.sql.types.{NumericType, StringType, StructType}
 
 import scala.collection.mutable
 
 /**
- * Created by kafka on 9/5/18.
- */
+  * Created by kafka on 9/5/18.
+  */
 object BuildPipeline {
 
   val logger = Logger.getLogger(getClass.getName)
 
   def createStringIndexer(columns:List[String]) = {
     columns.map(column => {
-          val stringIndexer = new StringIndexer()
-          stringIndexer.setInputCol(column).setOutputCol(s"${column}_indexed")
-          stringIndexer
+      val stringIndexer = new StringIndexer()
+      stringIndexer.setInputCol(column).setOutputCol(s"${column}_indexed")
+      stringIndexer
     })
   }
 
@@ -42,6 +42,7 @@ object BuildPipeline {
 
   def createFeaturePipeline(schema:StructType, columns:List[String]):Array[PipelineStage] = {
     val featureColumns = mutable.ArrayBuffer[String]()
+    val scaleFeatureColumns = mutable.ArrayBuffer[String]()
     val preprocessingStages = schema.fields.filter(field => columns.contains(field.name)).flatMap(field => {
 
       field.dataType match {
@@ -50,16 +51,19 @@ object BuildPipeline {
           val stringIndexer = new StringIndexer()
           stringIndexer.setInputCol(field.name).setOutputCol(s"${field.name}_indexed")
 
-          val oneHotEncoder = new OneHotEncoder()
+          /*val oneHotEncoder = new OneHotEncoder()
           oneHotEncoder.setInputCol(s"${field.name}_indexed").setOutputCol(s"${field.name}_encoded")
 
           featureColumns += (s"${field.name}_encoded")
-          Array[PipelineStage](stringIndexer, oneHotEncoder)
+          Array[PipelineStage](stringIndexer, oneHotEncoder)*/
+          Array[PipelineStage](stringIndexer)
           //Array[PipelineStage](stringIndexer)
         }
 
         case n: NumericType => {
-          featureColumns += (field.name)
+          val numericAssembler = new VectorAssembler()
+          //featureColumns += (field.name)
+          scaleFeatureColumns += (field.name)
           Array.empty[PipelineStage]
         }
         case _ => {
@@ -69,10 +73,17 @@ object BuildPipeline {
 
     })
 
-    val vectorAssembler = new VectorAssembler()
-    vectorAssembler.setInputCols(featureColumns.toArray).setOutputCol("features")
+    val numericAssembler = new VectorAssembler()
+    numericAssembler.setInputCols(scaleFeatureColumns.toArray).setOutputCol("numericRawFeatures")
+    val slicer = new VectorSlicer().setInputCol("numericRawFeatures").setOutputCol("slicedfeatures").setNames(scaleFeatureColumns.toArray)
+    val scaler = new StandardScaler().setInputCol("slicedfeatures").setOutputCol("scaledfeatures").setWithStd(true).setWithMean(true)
 
-    (preprocessingStages :+ vectorAssembler)
+    val vectorAssembler = new VectorAssembler()
+    vectorAssembler.setInputCols(featureColumns.toArray :+ "scaledfeatures").setOutputCol("features")
+
+
+    (preprocessingStages ++ Array(numericAssembler, slicer, scaler, vectorAssembler))
+
 
   }
 
